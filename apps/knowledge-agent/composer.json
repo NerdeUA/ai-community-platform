@@ -19,6 +19,7 @@
         "symfony/flex": "^2",
         "symfony/framework-bundle": "7.*",
         "symfony/http-client": "7.*",
+        "symfony/monolog-bundle": "^3.10",
         "symfony/runtime": "7.*",
         "symfony/security-bundle": "7.*",
         "symfony/security-csrf": "7.*",

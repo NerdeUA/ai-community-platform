@@ -1,0 +1,206 @@
+Doctrine\DBAL\Exception\ConnectionException {#4444
+  #message: "An exception occurred in the driver: SQLSTATE[08006] [7] connection to server at "postgres" (172.19.0.3), port 5432 failed: FATAL:  password authentication failed for user "knowledge_agent""
+  #code: 7
+  #file: "/var/www/html/vendor/doctrine/dbal/src/Driver/API/PostgreSQL/ExceptionConverter.php"
+  #line: 78
+  -previous: Doctrine\DBAL\Driver\PDO\Exception {#4217
+    #message: "SQLSTATE[08006] [7] connection to server at "postgres" (172.19.0.3), port 5432 failed: FATAL:  password authentication failed for user "knowledge_agent""
+    #code: 7
+    #file: "/var/www/html/vendor/doctrine/dbal/src/Driver/PDO/Exception.php"
+    #line: 24
+    -previous: PDOException {#4220
+      #message: "SQLSTATE[08006] [7] connection to server at "postgres" (172.19.0.3), port 5432 failed: FATAL:  password authentication failed for user "knowledge_agent""
+      #code: 7
+      #file: "/var/www/html/vendor/doctrine/dbal/src/Driver/PDO/PDOConnect.php"
+      #line: 28
+      +errorInfo: array:3 [
+        0 => "08006"
+        1 => 7
+        2 => "connection to server at "postgres" (172.19.0.3), port 5432 failed: FATAL:  password authentication failed for user "knowledge_agent""
+      ]
+      trace: {
+        /var/www/html/vendor/doctrine/dbal/src/Driver/PDO/PDOConnect.php:28 { …}
+        /var/www/html/vendor/doctrine/dbal/src/Driver/PDO/PgSQL/Driver.php:48 { …}
+        /var/www/html/vendor/doctrine/dbal/src/Driver/Middleware/AbstractDriverMiddleware.php:27 { …}
+        /var/www/html/vendor/doctrine/dbal/src/Logging/Driver.php:30 { …}
+        /var/www/html/vendor/doctrine/dbal/src/Driver/Middleware/AbstractDriverMiddleware.php:27 { …}
+        /var/www/html/vendor/symfony/doctrine-bridge/Middleware/Debug/Driver.php:37 { …}
+        /var/www/html/vendor/doctrine/dbal/src/Driver/Middleware/AbstractDriverMiddleware.php:27 { …}
+        /var/www/html/vendor/symfony/doctrine-bridge/Middleware/IdleConnection/Driver.php:35 { …}
+        /var/www/html/vendor/doctrine/dbal/src/Connection.php:222 { …}
+        /var/www/html/vendor/doctrine/dbal/src/Connection.php:895 { …}
+        /var/www/html/src/Repository/SettingsRepository.php:28 {
+          App\Repository\SettingsRepository->set(string $key, string $value): void
+          › {
+          ›     $this->connection->executeStatement(
+          ›         <<<'SQL'
+          arguments: {
+            $sql: """
+                  INSERT INTO agent_settings (key, value, updated_at)\n
+                  VALUES (:key, :value, now())\n
+                  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+              """
+            $params: array:2 [ …2]
+          }
+        }
+        /var/www/html/src/Controller/Admin/SettingsApiController.php:57 { …}
+        /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:183 { …}
+        /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+        /var/www/html/vendor/symfony/http-kernel/Kernel.php:193 { …}
+        /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+        /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+        /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+        /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+        /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+        /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:708 { …}
+        /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:540 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+        /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5703 { …}
+        /var/www/html/tests/Functional/Admin/SettingsApiCest.php:37 { …}
+        App\Tests\Functional\Admin\SettingsApiCest->settingsApiSavesBaseInstructions() {}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+        /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+        /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+        /var/www/html/vendor/symfony/console/Application.php:356 { …}
+        /var/www/html/vendor/symfony/console/Application.php:195 { …}
+        /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+        /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+        /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+        /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+        /var/www/html/vendor/bin/codecept:119 { …}
+      }
+    }
+    -sqlState: "08006"
+    trace: {
+      /var/www/html/vendor/doctrine/dbal/src/Driver/PDO/Exception.php:24 { …}
+      /var/www/html/vendor/doctrine/dbal/src/Driver/PDO/PgSQL/Driver.php:55 { …}
+      /var/www/html/vendor/doctrine/dbal/src/Driver/Middleware/AbstractDriverMiddleware.php:27 { …}
+      /var/www/html/vendor/doctrine/dbal/src/Logging/Driver.php:30 { …}
+      /var/www/html/vendor/doctrine/dbal/src/Driver/Middleware/AbstractDriverMiddleware.php:27 { …}
+      /var/www/html/vendor/symfony/doctrine-bridge/Middleware/Debug/Driver.php:37 { …}
+      /var/www/html/vendor/doctrine/dbal/src/Driver/Middleware/AbstractDriverMiddleware.php:27 { …}
+      /var/www/html/vendor/symfony/doctrine-bridge/Middleware/IdleConnection/Driver.php:35 { …}
+      /var/www/html/vendor/doctrine/dbal/src/Connection.php:222 { …}
+      /var/www/html/vendor/doctrine/dbal/src/Connection.php:895 { …}
+      /var/www/html/src/Repository/SettingsRepository.php:28 {
+        App\Repository\SettingsRepository->set(string $key, string $value): void
+        › {
+        ›     $this->connection->executeStatement(
+        ›         <<<'SQL'
+        arguments: {
+          $sql: """
+                INSERT INTO agent_settings (key, value, updated_at)\n
+                VALUES (:key, :value, now())\n
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+            """
+          $params: array:2 [ …2]
+        }
+      }
+      /var/www/html/src/Controller/Admin/SettingsApiController.php:57 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:183 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+      /var/www/html/vendor/symfony/http-kernel/Kernel.php:193 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+      /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+      /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+      /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+      /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+      /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:708 { …}
+      /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:540 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+      /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5703 { …}
+      /var/www/html/tests/Functional/Admin/SettingsApiCest.php:37 { …}
+      App\Tests\Functional\Admin\SettingsApiCest->settingsApiSavesBaseInstructions() {}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+      /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+      /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+      /var/www/html/vendor/symfony/console/Application.php:356 { …}
+      /var/www/html/vendor/symfony/console/Application.php:195 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+      /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+      /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+      /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+      /var/www/html/vendor/bin/codecept:119 { …}
+    }
+  }
+  -query: null
+  trace: {
+    /var/www/html/vendor/doctrine/dbal/src/Driver/API/PostgreSQL/ExceptionConverter.php:78 { …}
+    /var/www/html/vendor/doctrine/dbal/src/Connection.php:1460 { …}
+    /var/www/html/vendor/doctrine/dbal/src/Connection.php:1402 { …}
+    /var/www/html/vendor/doctrine/dbal/src/Connection.php:224 { …}
+    /var/www/html/vendor/doctrine/dbal/src/Connection.php:895 { …}
+    /var/www/html/src/Repository/SettingsRepository.php:28 {
+      App\Repository\SettingsRepository->set(string $key, string $value): void
+      › {
+      ›     $this->connection->executeStatement(
+      ›         <<<'SQL'
+      arguments: {
+        $sql: """
+              INSERT INTO agent_settings (key, value, updated_at)\n
+              VALUES (:key, :value, now())\n
+              ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+          """
+        $params: array:2 [ …2]
+      }
+    }
+    /var/www/html/src/Controller/Admin/SettingsApiController.php:57 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:183 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+    /var/www/html/vendor/symfony/http-kernel/Kernel.php:193 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+    /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+    /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:708 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:540 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+    /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5703 { …}
+    /var/www/html/tests/Functional/Admin/SettingsApiCest.php:37 { …}
+    App\Tests\Functional\Admin\SettingsApiCest->settingsApiSavesBaseInstructions() {}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+    /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+    /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+    /var/www/html/vendor/symfony/console/Application.php:356 { …}
+    /var/www/html/vendor/symfony/console/Application.php:195 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+    /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+    /var/www/html/vendor/bin/codecept:119 { …}
+  }
+}

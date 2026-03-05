@@ -1,5 +1,6 @@
 parameters:
     app.opensearch_url: '%env(OPENSEARCH_URL)%'
+    app.log_app_name: 'knowledge-agent'
     app.opensearch_index: '%env(OPENSEARCH_INDEX)%'
     app.rabbitmq_url: '%env(RABBITMQ_URL)%'
     app.litellm_base_url: '%env(LITELLM_BASE_URL)%'
@@ -44,7 +45,7 @@ services:
         arguments:
             $litellmBaseUrl: '%app.litellm_base_url%'
             $litellmApiKey: '%app.litellm_api_key%'
-            $model: 'gpt-4o-mini'
+            $model: 'minimax/minimax-m2.5'
             $settingsRepository: '@App\Repository\SettingsRepository'
 
     App\Service\EmbeddingService:
@@ -85,3 +86,13 @@ services:
         arguments:
             $internalToken: '%app.internal_token%'
             $projectDir: '%kernel.project_dir%'
+
+    App\Logging\OpenSearchHandler:
+        arguments:
+            $opensearchUrl: '%app.opensearch_url%'
+
+    App\Logging\OpenSearchProcessor:
+        arguments:
+            $appName: '%app.log_app_name%'
+        tags:
+            - { name: monolog.processor }

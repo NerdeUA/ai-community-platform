@@ -3,6 +3,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.config import settings
+from app.logging_handler import OpenSearchHandler
+from app.middleware.trace import TraceMiddleware
 from app.routers import health
 from app.routers.admin import settings as admin_settings
 from app.routers.admin import sources as admin_sources
@@ -11,6 +14,8 @@ from app.routers.api import news as api_news
 from app.routers.web import news as web_news
 
 logging.basicConfig(level=logging.INFO)
+_os_handler = OpenSearchHandler(settings.opensearch_url)
+logging.getLogger().addHandler(_os_handler)
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +39,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="news-maker-agent", version="0.1.0", lifespan=lifespan)
+app.add_middleware(TraceMiddleware)
 
 app.include_router(health.router)
 app.include_router(api_manifest.router)

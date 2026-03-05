@@ -1,0 +1,66 @@
+OpenSearch\Common\Exceptions\Missing404Exception {#9828
+  #message: "{"error":{"root_cause":[{"type":"index_not_found_exception","reason":"no such index [knowledge_entries_v1]","index":"knowledge_entries_v1","resource.id":"knowledge_entries_v1","resource.type":"index_or_alias","index_uuid":"_na_"}],"type":"index_not_found_exception","reason":"no such index [knowledge_entries_v1]","index":"knowledge_entries_v1","resource.id":"knowledge_entries_v1","resource.type":"index_or_alias","index_uuid":"_na_"},"status":404}"
+  #code: 0
+  #file: "/var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php"
+  #line: 672
+  #statusCode: 404
+  #headers: []
+  trace: {
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php:672 { …}
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php:338 { …}
+    /var/www/html/vendor/react/promise/src/Internal/FulfilledPromise.php:47 { …}
+    /var/www/html/vendor/ezimuel/ringphp/src/Future/CompletedFutureValue.php:66 { …}
+    /var/www/html/vendor/ezimuel/ringphp/src/Core.php:341 { …}
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php:270 { …}
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php:248 { …}
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Transport.php:117 { …}
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/LegacyTransportWrapper.php:34 { …}
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Client.php:2285 { …}
+    /var/www/html/vendor/opensearch-project/opensearch-php/src/OpenSearch/Client.php:1622 { …}
+    /var/www/html/src/OpenSearch/KnowledgeRepository.php:117 {
+      App\OpenSearch\KnowledgeRepository->search(string $query, string $mode = 'hybrid', array $options = []): array
+      › /** @var array<string, mixed> $response */
+      › $response = $this->client->search([
+      ›     'index' => $this->indexName,
+      arguments: {
+        $params: []
+      }
+    }
+    /var/www/html/src/Controller/Api/SearchController.php:39 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:183 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+    /var/www/html/vendor/symfony/http-kernel/Kernel.php:191 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+    /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+    /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:700 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:523 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+    /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5683 { …}
+    /var/www/html/tests/Functional/Api/SearchApiCest.php:18 { …}
+    App\Tests\Functional\Api\SearchApiCest->testSearchReturnsResults() {}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+    /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+    /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+    /var/www/html/vendor/symfony/console/Application.php:356 { …}
+    /var/www/html/vendor/symfony/console/Application.php:195 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+    /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+    /var/www/html/vendor/bin/codecept:119 { …}
+  }
+}

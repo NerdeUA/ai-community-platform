@@ -16,7 +16,7 @@ final class KnowledgeExtractionAgent extends Agent
     public function __construct(
         private readonly string $litellmBaseUrl,
         private readonly string $litellmApiKey,
-        private readonly string $model = 'gpt-4o-mini',
+        private readonly string $model = 'minimax/minimax-m2.5',
         private readonly string $baseInstructions = '',
         private readonly ?SettingsRepository $settingsRepository = null,
     ) {

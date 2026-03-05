@@ -20,7 +20,21 @@ final class ManifestController extends AbstractController
             'permissions' => [],
             'commands' => ['/hello'],
             'events' => [],
-            'capabilities' => [],
+            'capabilities' => ['hello.greet'],
+            'capability_schemas' => [
+                'hello.greet' => [
+                    'description' => 'Greet a user by name. Returns a friendly hello message.',
+                    'input_schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'name' => [
+                                'type' => 'string',
+                                'description' => 'Name of the person to greet',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'a2a_endpoint' => 'http://hello-agent/api/v1/a2a',
             'health_url' => 'http://hello-agent/health',
         ]);

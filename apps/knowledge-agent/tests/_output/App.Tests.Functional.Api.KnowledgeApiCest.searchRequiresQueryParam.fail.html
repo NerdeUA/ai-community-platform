@@ -1,0 +1,119 @@
+InvalidArgumentException {#3537
+  #message: "The controller for URI "/api/v1/knowledge/search" is not callable: Environment variable not found: "OPENSEARCH_URL"."
+  #code: 0
+  #file: "/var/www/html/vendor/symfony/http-kernel/Controller/ControllerResolver.php"
+  #line: 97
+  -previous: Symfony\Component\DependencyInjection\Exception\EnvNotFoundException {#5814
+    #message: "Environment variable not found: "OPENSEARCH_URL"."
+    #code: 0
+    #file: "/var/www/html/vendor/symfony/dependency-injection/EnvVarProcessor.php"
+    #line: 221
+    trace: {
+      /var/www/html/vendor/symfony/dependency-injection/EnvVarProcessor.php:221 { …}
+      /var/www/html/vendor/symfony/dependency-injection/Container.php:378 { …}
+      /var/www/html/var/cache/test/ContainerTSzh1aI/getClientService.php:24 {
+        ContainerTSzh1aI\getClientService::do($container, $lazyLoad = true)
+        › 
+        ›     return $container->privates['OpenSearch\\Client'] = ($container->privates['App\\OpenSearch\\OpenSearchClientFactory'] ??= new \App\OpenSearch\OpenSearchClientFactory($container->getEnv('OPENSEARCH_URL')))->create();
+        › }
+        arguments: {
+          $name: "OPENSEARCH_URL"
+        }
+      }
+      /var/www/html/var/cache/test/ContainerTSzh1aI/App_KernelTestDebugContainer.php:217 { …}
+      /var/www/html/var/cache/test/ContainerTSzh1aI/getKnowledgeRepositoryService.php:23 { …}
+      /var/www/html/var/cache/test/ContainerTSzh1aI/App_KernelTestDebugContainer.php:217 { …}
+      /var/www/html/var/cache/test/ContainerTSzh1aI/getSearchControllerService.php:24 { …}
+      /var/www/html/var/cache/test/ContainerTSzh1aI/App_KernelTestDebugContainer.php:217 { …}
+      /var/www/html/vendor/symfony/dependency-injection/Container.php:221 { …}
+      /var/www/html/vendor/symfony/dependency-injection/Container.php:203 { …}
+      /var/www/html/vendor/symfony/http-kernel/Controller/ContainerControllerResolver.php:38 { …}
+      /var/www/html/vendor/symfony/framework-bundle/Controller/ControllerResolver.php:25 { …}
+      /var/www/html/vendor/symfony/http-kernel/Controller/ControllerResolver.php:115 { …}
+      /var/www/html/vendor/symfony/http-kernel/Controller/ControllerResolver.php:95 { …}
+      /var/www/html/vendor/symfony/http-kernel/Controller/TraceableControllerResolver.php:33 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:166 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+      /var/www/html/vendor/symfony/http-kernel/Kernel.php:191 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+      /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+      /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+      /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+      /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+      /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:700 { …}
+      /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:523 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+      /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5683 { …}
+      /var/www/html/tests/Functional/Api/KnowledgeApiCest.php:39 { …}
+      App\Tests\Functional\Api\KnowledgeApiCest->searchRequiresQueryParam() {}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+      /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+      /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+      /var/www/html/vendor/symfony/console/Application.php:356 { …}
+      /var/www/html/vendor/symfony/console/Application.php:195 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+      /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+      /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+      /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+      /var/www/html/vendor/bin/codecept:119 { …}
+    }
+  }
+  trace: {
+    /var/www/html/vendor/symfony/http-kernel/Controller/ControllerResolver.php:97 { …}
+    /var/www/html/vendor/symfony/http-kernel/Controller/TraceableControllerResolver.php:33 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:166 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+    /var/www/html/vendor/symfony/http-kernel/Kernel.php:191 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+    /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+    /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:700 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:523 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+    /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5683 {
+      FunctionalTester->sendGet(string $url, array $params = [])
+      › public function sendGet(string $url, array $params = []) {
+      ›     return $this->getScenario()->runStep(new \Codeception\Step\Action('sendGet', func_get_args()));
+      › }
+      arguments: {
+        $step: Codeception\Step\Action {#3230 …}
+      }
+    }
+    /var/www/html/tests/Functional/Api/KnowledgeApiCest.php:39 { …}
+    App\Tests\Functional\Api\KnowledgeApiCest->searchRequiresQueryParam() {}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+    /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+    /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+    /var/www/html/vendor/symfony/console/Application.php:356 { …}
+    /var/www/html/vendor/symfony/console/Application.php:195 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+    /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+    /var/www/html/vendor/bin/codecept:119 { …}
+  }
+}

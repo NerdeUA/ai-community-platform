@@ -97,8 +97,8 @@ class AgentSettings(Base):
     proxy_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     proxy_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     # Models
-    ranker_model: Mapped[str] = mapped_column(String(128), default="gpt-4o-mini")
-    rewriter_model: Mapped[str] = mapped_column(String(128), default="gpt-4o-mini")
+    ranker_model: Mapped[str] = mapped_column(String(128), default="minimax/minimax-m2.5")
+    rewriter_model: Mapped[str] = mapped_column(String(128), default="minimax/minimax-m2.5")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 

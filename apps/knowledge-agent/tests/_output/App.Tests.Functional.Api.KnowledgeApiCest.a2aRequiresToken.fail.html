@@ -1,0 +1,117 @@
+Symfony\Component\HttpKernel\Exception\NotFoundHttpException {#3183
+  #message: "No route found for "POST http://localhost/a2a""
+  #code: 0
+  #file: "/var/www/html/vendor/symfony/http-kernel/EventListener/RouterListener.php"
+  #line: 156
+  -previous: Symfony\Component\Routing\Exception\ResourceNotFoundException {#7447
+    #message: "No routes found for "/a2a"."
+    #code: 0
+    #file: "/var/www/html/vendor/symfony/routing/Matcher/Dumper/CompiledUrlMatcherTrait.php"
+    #line: 70
+    trace: {
+      /var/www/html/vendor/symfony/routing/Matcher/Dumper/CompiledUrlMatcherTrait.php:70 { …}
+      /var/www/html/vendor/symfony/routing/Matcher/UrlMatcher.php:90 { …}
+      /var/www/html/vendor/symfony/routing/Router.php:188 { …}
+      /var/www/html/vendor/symfony/http-kernel/EventListener/RouterListener.php:101 { …}
+      /var/www/html/vendor/symfony/event-dispatcher/Debug/WrappedListener.php:115 { …}
+      /var/www/html/vendor/symfony/event-dispatcher/EventDispatcher.php:206 { …}
+      /var/www/html/vendor/symfony/event-dispatcher/EventDispatcher.php:56 { …}
+      /var/www/html/vendor/symfony/event-dispatcher/Debug/TraceableEventDispatcher.php:126 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:159 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+      /var/www/html/vendor/symfony/http-kernel/Kernel.php:191 { …}
+      /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+      /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+      /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+      /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+      /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+      /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:708 { …}
+      /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:482 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+      /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5633 {
+        FunctionalTester->sendPost(string $url, $params = [], array $files = [])
+        › public function sendPost(string $url, $params = [], array $files = []) {
+        ›     return $this->getScenario()->runStep(new \Codeception\Step\Action('sendPost', func_get_args()));
+        › }
+        arguments: {
+          $step: Codeception\Step\Action {#3273 …}
+        }
+      }
+      /var/www/html/tests/Functional/Api/KnowledgeApiCest.php:47 { …}
+      App\Tests\Functional\Api\KnowledgeApiCest->a2aRequiresToken() {}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+      /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+      /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+      /var/www/html/vendor/symfony/console/Application.php:356 { …}
+      /var/www/html/vendor/symfony/console/Application.php:195 { …}
+      /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+      /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+      /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+      /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+      /var/www/html/vendor/bin/codecept:119 { …}
+    }
+  }
+  -statusCode: 404
+  -headers: []
+  trace: {
+    /var/www/html/vendor/symfony/http-kernel/EventListener/RouterListener.php:156 { …}
+    /var/www/html/vendor/symfony/event-dispatcher/Debug/WrappedListener.php:115 { …}
+    /var/www/html/vendor/symfony/event-dispatcher/EventDispatcher.php:206 { …}
+    /var/www/html/vendor/symfony/event-dispatcher/EventDispatcher.php:56 { …}
+    /var/www/html/vendor/symfony/event-dispatcher/Debug/TraceableEventDispatcher.php:126 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:159 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernel.php:76 { …}
+    /var/www/html/vendor/symfony/http-kernel/Kernel.php:191 { …}
+    /var/www/html/vendor/symfony/http-kernel/HttpKernelBrowser.php:62 { …}
+    /var/www/html/vendor/codeception/module-symfony/src/Codeception/Lib/Connector/Symfony.php:48 { …}
+    /var/www/html/vendor/symfony/browser-kit/AbstractBrowser.php:378 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:243 { …}
+    /var/www/html/vendor/codeception/lib-innerbrowser/src/Codeception/Lib/InnerBrowser.php:161 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:708 { …}
+    /var/www/html/vendor/codeception/module-rest/src/Codeception/Module/REST.php:482 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Step.php:267 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Scenario.php:70 { …}
+    /var/www/html/tests/_support/_generated/FunctionalTesterActions.php:5633 {
+      FunctionalTester->sendPost(string $url, $params = [], array $files = [])
+      › public function sendPost(string $url, $params = [], array $files = []) {
+      ›     return $this->getScenario()->runStep(new \Codeception\Step\Action('sendPost', func_get_args()));
+      › }
+      arguments: {
+        $step: Codeception\Step\Action {#3273 …}
+      }
+    }
+    /var/www/html/tests/Functional/Api/KnowledgeApiCest.php:47 { …}
+    App\Tests\Functional\Api\KnowledgeApiCest->a2aRequiresToken() {}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Lib/Di.php:118 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:181 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:193 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Cest.php:126 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Test/Test.php:157 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Suite.php:131 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/SuiteManager.php:141 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:244 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Codecept.php:206 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:585 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Command/Run.php:406 { …}
+    /var/www/html/vendor/symfony/console/Command/Command.php:341 { …}
+    /var/www/html/vendor/symfony/console/Application.php:1094 { …}
+    /var/www/html/vendor/symfony/console/Application.php:356 { …}
+    /var/www/html/vendor/symfony/console/Application.php:195 { …}
+    /var/www/html/vendor/codeception/codeception/src/Codeception/Application.php:107 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:63 { …}
+    /var/www/html/vendor/codeception/codeception/app.php:64 { …}
+    /var/www/html/vendor/codeception/codeception/codecept:7 { …}
+    /var/www/html/vendor/bin/codecept:119 { …}
+  }
+}

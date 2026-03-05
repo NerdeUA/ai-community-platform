@@ -1,3 +1,15 @@
+parameters:
+    app.opensearch_url: '%env(OPENSEARCH_URL)%'
+    app.log_app_name: 'hello-agent'
+    app.langfuse_enabled: '%env(bool:LANGFUSE_ENABLED)%'
+    app.langfuse_base_url: '%env(LANGFUSE_BASE_URL)%'
+    app.langfuse_public_key: '%env(LANGFUSE_PUBLIC_KEY)%'
+    app.langfuse_secret_key: '%env(LANGFUSE_SECRET_KEY)%'
+    app.langfuse_environment: '%env(LANGFUSE_ENV)%'
+    app.litellm_base_url: '%env(LITELLM_BASE_URL)%'
+    app.litellm_api_key: '%env(LITELLM_API_KEY)%'
+    app.llm_model: '%env(LLM_MODEL)%'
+
 services:
     _defaults:
         autowire: true
@@ -8,3 +20,27 @@ services:
         exclude:
             - '../src/DependencyInjection/'
             - '../src/Kernel.php'
+
+    App\Observability\LangfuseIngestionClient:
+        arguments:
+            $enabled: '%app.langfuse_enabled%'
+            $baseUrl: '%app.langfuse_base_url%'
+            $publicKey: '%app.langfuse_public_key%'
+            $secretKey: '%app.langfuse_secret_key%'
+            $environment: '%app.langfuse_environment%'
+
+    App\A2A\HelloA2AHandler:
+        arguments:
+            $liteLlmBaseUrl: '%app.litellm_base_url%'
+            $liteLlmApiKey: '%app.litellm_api_key%'
+            $llmModel: '%app.llm_model%'
+
+    App\Logging\OpenSearchHandler:
+        arguments:
+            $opensearchUrl: '%app.opensearch_url%'
+
+    App\Logging\OpenSearchProcessor:
+        arguments:
+            $appName: '%app.log_app_name%'
+        tags:
+            - { name: monolog.processor }
