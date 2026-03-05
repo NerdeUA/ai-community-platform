@@ -1,0 +1,64 @@
+services:
+  openclaw-gateway:
+    image: ghcr.io/openclaw/openclaw:latest
+    pull_policy: always
+    entrypoint:
+      - /bin/sh
+      - -lc
+    env_file:
+      - ./docker/openclaw/.env
+    environment:
+      PLATFORM_CORE_URL: http://core
+      OPENSEARCH_URL: http://opensearch:9200
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://langfuse-web:3000/api/public/otel
+      OTEL_EXPORTER_OTLP_HEADERS: Authorization=Basic bGZfcGtfbG9jYWxfZGV2OmxmX3NrX2xvY2FsX2Rldg==
+    ports:
+      - "18789:18789"
+    command:
+      - cd /home/node/.openclaw/extensions/platform-tools && npm install --production 2>/dev/null; cd /home/node/.openclaw && openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true && exec openclaw gateway run --dev --allow-unconfigured --auth token --bind lan --port 18789 --token $$OPENCLAW_GATEWAY_TOKEN
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=ai-community-platform_dev-edge
+      - traefik.http.routers.openclaw-messaging.rule=PathPrefix(`/api/channels/`)
+      - traefik.http.routers.openclaw-messaging.entrypoints=openclaw
+      - traefik.http.routers.openclaw-messaging.priority=100
+      - traefik.http.routers.openclaw-messaging.service=openclaw-ui
+      - traefik.http.routers.openclaw-ui.rule=PathPrefix(`/`)
+      - traefik.http.routers.openclaw-ui.entrypoints=openclaw
+      - traefik.http.routers.openclaw-ui.middlewares=edge-auth@docker
+      - traefik.http.routers.openclaw-ui.service=openclaw-ui
+      - traefik.http.services.openclaw-ui.loadbalancer.server.port=18789
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    volumes:
+      - ./.local/openclaw/state:/home/node/.openclaw
+      - ./docker/openclaw/plugins/platform-tools:/home/node/.openclaw/extensions/platform-tools
+    depends_on:
+      - opensearch
+    restart: unless-stopped
+    networks:
+      - dev-edge
+
+  openclaw-cli:
+    image: ghcr.io/openclaw/openclaw:latest
+    pull_policy: always
+    env_file:
+      - ./docker/openclaw/.env
+    depends_on:
+      - openclaw-gateway
+    network_mode: "service:openclaw-gateway"
+    healthcheck:
+      disable: true
+    entrypoint:
+      - /bin/sh
+      - -lc
+    command:
+      - sleep infinity
+    volumes:
+      - ./.local/openclaw/state:/home/node/.openclaw

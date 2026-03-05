@@ -1,0 +1,29 @@
+services:
+  news-maker-agent:
+    build:
+      context: .
+      dockerfile: docker/news-maker-agent/Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.news-maker-agent.rule=PathPrefix(`/`)
+      - traefik.http.routers.news-maker-agent.entrypoints=news
+      - traefik.http.routers.news-maker-agent.middlewares=edge-auth@docker
+      - traefik.http.services.news-maker-agent.loadbalancer.server.port=8000
+      - ai.platform.agent=true
+    environment:
+      DATABASE_URL: postgresql://news_maker_agent:news_maker_agent@postgres:5432/news_maker_agent
+      LITELLM_BASE_URL: http://litellm:4000
+      LITELLM_API_KEY: dev-key
+      RANKER_MODEL: minimax/minimax-m2.5
+      REWRITER_MODEL: minimax/minimax-m2.5
+      PLATFORM_CORE_URL: http://core
+      APP_INTERNAL_TOKEN: dev-internal-token
+      OPENSEARCH_URL: http://opensearch:9200
+    volumes:
+      - ./apps/news-maker-agent:/app
+    depends_on:
+      - postgres
+      - litellm
+      - opensearch
+    networks:
+      - dev-edge

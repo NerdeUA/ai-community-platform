@@ -13,181 +13,12 @@ services:
       - "8083:8083"
       - "8084:8084"
       - "8085:8085"
+      - "8086:8086"
     volumes:
       - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - dev-edge
-
-  core:
-    build:
-      context: .
-      dockerfile: docker/core/Dockerfile
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.core.rule=PathPrefix(`/`)
-      - traefik.http.routers.core.entrypoints=web
-      - traefik.http.services.core.loadbalancer.server.port=80
-    volumes:
-      - ./apps/core:/var/www/html
-    networks:
-      - dev-edge
-
-  knowledge-agent:
-    build:
-      context: .
-      dockerfile: docker/knowledge-agent/Dockerfile
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.knowledge-agent.rule=PathPrefix(`/`)
-      - traefik.http.routers.knowledge-agent.entrypoints=knowledge
-      - traefik.http.services.knowledge-agent.loadbalancer.server.port=80
-      - ai.platform.agent=true
-    environment:
-      PHP_INI_SCAN_DIR: /var/www/html/conf.d:/usr/local/etc/php/conf.d
-      DATABASE_URL: postgresql://knowledge_agent:knowledge_agent@postgres:5432/knowledge_agent?serverVersion=16&charset=utf8
-      OPENSEARCH_URL: http://opensearch:9200
-      OPENSEARCH_INDEX: knowledge_agent_knowledge_entries
-      REDIS_URL: redis://redis:6379/1
-      RABBITMQ_URL: amqp://app:app@rabbitmq:5672
-      APP_INTERNAL_TOKEN: dev-internal-token
-      PLATFORM_CORE_URL: http://core
-    volumes:
-      - ./apps/knowledge-agent:/var/www/html
-    depends_on:
-      - postgres
-      - opensearch
-      - rabbitmq
-    networks:
-      - dev-edge
-
-  knowledge-worker:
-    build:
-      context: .
-      dockerfile: docker/knowledge-agent/Dockerfile
-    command: php bin/console knowledge:worker
-    environment:
-      PHP_INI_SCAN_DIR: /var/www/html/conf.d:/usr/local/etc/php/conf.d
-      DATABASE_URL: postgresql://knowledge_agent:knowledge_agent@postgres:5432/knowledge_agent?serverVersion=16&charset=utf8
-      OPENSEARCH_URL: http://opensearch:9200
-      OPENSEARCH_INDEX: knowledge_agent_knowledge_entries
-      REDIS_URL: redis://redis:6379/1
-      RABBITMQ_URL: amqp://app:app@rabbitmq:5672
-      APP_INTERNAL_TOKEN: dev-internal-token
-    volumes:
-      - ./apps/knowledge-agent:/var/www/html
-    depends_on:
-      - postgres
-      - opensearch
-      - rabbitmq
-      - litellm
-    networks:
-      - dev-edge
-    restart: unless-stopped
-
-  news-maker-agent:
-    build:
-      context: .
-      dockerfile: docker/news-maker-agent/Dockerfile
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.news-maker-agent.rule=PathPrefix(`/`)
-      - traefik.http.routers.news-maker-agent.entrypoints=news
-      - traefik.http.services.news-maker-agent.loadbalancer.server.port=8000
-      - ai.platform.agent=true
-    environment:
-      DATABASE_URL: postgresql://news_maker_agent:news_maker_agent@postgres:5432/news_maker_agent
-      LITELLM_BASE_URL: http://litellm:4000
-      LITELLM_API_KEY: dev-key
-      RANKER_MODEL: gpt-4o-mini
-      REWRITER_MODEL: gpt-4o-mini
-      PLATFORM_CORE_URL: http://core
-      APP_INTERNAL_TOKEN: dev-internal-token
-    volumes:
-      - ./apps/news-maker-agent:/app
-    depends_on:
-      - postgres
-      - litellm
-    networks:
-      - dev-edge
-
-  hello-agent:
-    build:
-      context: .
-      dockerfile: docker/hello-agent/Dockerfile
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.hello-agent.rule=PathPrefix(`/`)
-      - traefik.http.routers.hello-agent.entrypoints=hello
-      - traefik.http.services.hello-agent.loadbalancer.server.port=80
-      - ai.platform.agent=true
-    volumes:
-      - ./apps/hello-agent:/var/www/html
-    networks:
-      - dev-edge
-
-  admin-stub:
-    image: nginx:1.27-alpine
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.admin-stub.rule=PathPrefix(`/`)
-      - traefik.http.routers.admin-stub.entrypoints=admin
-      - traefik.http.services.admin-stub.loadbalancer.server.port=80
-    volumes:
-      - ./stubs/admin:/usr/share/nginx/html:ro
-    networks:
-      - dev-edge
-
-  openclaw-gateway:
-    image: ghcr.io/openclaw/openclaw:latest
-    pull_policy: always
-    entrypoint:
-      - /bin/sh
-      - -lc
-    env_file:
-      - ./docker/openclaw/.env
-    ports:
-      - "18789:18789"
-    command:
-      - openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true && exec openclaw gateway run --dev --allow-unconfigured --auth token --bind lan --port 18789 --token $$OPENCLAW_GATEWAY_TOKEN
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=ai-community-platform_dev-edge
-      - traefik.http.routers.openclaw-ui.rule=PathPrefix(`/`)
-      - traefik.http.routers.openclaw-ui.entrypoints=openclaw
-      - traefik.http.routers.openclaw-ui.service=openclaw-ui
-      - traefik.http.services.openclaw-ui.loadbalancer.server.port=18789
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - node -e "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 15s
-    volumes:
-      - ./.local/openclaw/state:/home/node/.openclaw
-    restart: unless-stopped
-    networks:
-      - dev-edge
-
-  openclaw-cli:
-    image: ghcr.io/openclaw/openclaw:latest
-    pull_policy: always
-    env_file:
-      - ./docker/openclaw/.env
-    depends_on:
-      - openclaw-gateway
-    network_mode: "service:openclaw-gateway"
-    healthcheck:
-      disable: true
-    entrypoint:
-      - /bin/sh
-      - -lc
-    command:
-      - sleep infinity
-    volumes:
-      - ./.local/openclaw/state:/home/node/.openclaw
 
   postgres:
     image: postgres:16-alpine
@@ -262,6 +93,12 @@ services:
 
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
+    env_file:
+      - path: ./.env.local
+        required: false
+    environment:
+      LITELLM_MASTER_KEY: dev-key
+      DATABASE_URL: postgresql://app:app@postgres:5432/litellm
     command:
       - "--config=/app/config.yaml"
       - "--host=0.0.0.0"
@@ -271,6 +108,9 @@ services:
       - "4000:4000"
     volumes:
       - ./docker/litellm/config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - dev-edge
 

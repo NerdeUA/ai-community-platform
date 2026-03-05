@@ -1,6 +1,13 @@
-COMPOSE ?= docker compose
+AGENT_FILES := $(sort $(wildcard compose.agent-*.yaml))
+COMPOSE_FILES := -f compose.yaml -f compose.core.yaml \
+        $(addprefix -f ,$(AGENT_FILES)) \
+        -f compose.langfuse.yaml -f compose.openclaw.yaml
+COMPOSE ?= docker compose $(COMPOSE_FILES)
 
-.PHONY: help setup infra-setup core-setup knowledge-setup news-setup hello-setup claw-setup up down ps logs logs-traefik logs-core logs-litellm logs-openclaw \
+.PHONY: help bootstrap setup infra-setup core-setup knowledge-setup news-setup hello-setup claw-setup \
+        up up-observability down ps logs logs-traefik logs-core logs-litellm logs-openclaw logs-langfuse \
+        agent-up agent-down \
+        litellm-db-init \
         install migrate test analyse cs-check cs-fix e2e e2e-smoke \
         knowledge-install knowledge-migrate knowledge-test knowledge-analyse knowledge-cs-check knowledge-cs-fix \
         hello-install hello-test hello-analyse hello-cs-check hello-cs-fix \
@@ -9,11 +16,14 @@ COMPOSE ?= docker compose
 
 help:
 	@printf '%s\n' \
-		'make setup                Pull/build the current local stack dependencies (core + knowledge + news + claw + infra)' \
+		'make bootstrap             Configure secrets from .env.local (run once before setup)' \
+		'make setup                Pull/build the current local stack dependencies (core + agents + claw + infra)' \
 		'make install              Install PHP dependencies via Composer inside the core container' \
 		'make knowledge-install    Install PHP dependencies inside the knowledge-agent container' \
 		'make news-install         Install Python dependencies inside the news-maker-agent container' \
 		'make up                   Start the local stack in the background' \
+		'make agent-up name=X      Start/update a single agent (e.g. make agent-up name=hello-agent)' \
+		'make agent-down name=X    Stop a single agent (e.g. make agent-down name=hello-agent)' \
 		'make down                 Stop the local stack' \
 		'make ps                   Show running services' \
 		'make logs                 Follow logs for all services' \
@@ -21,6 +31,8 @@ help:
 		'make logs-core            Follow core logs' \
 		'make logs-litellm         Follow LiteLLM logs' \
 		'make logs-openclaw        Follow OpenClaw gateway logs' \
+		'make logs-langfuse        Follow Langfuse web/worker logs' \
+		'make litellm-db-init      Ensure LiteLLM Postgres DB exists (fixes UI auth DB errors)' \
 		'make test                 Run Codeception unit + functional suites for core (stack must be up)' \
 		'make knowledge-test       Run Codeception suites for knowledge-agent (stack must be up)' \
 		'make hello-install         Install PHP dependencies inside the hello-agent container' \
@@ -43,11 +55,14 @@ help:
 		'make e2e                  Run Codecept.js + Playwright E2E tests (stack must be up)' \
 		'make e2e-smoke            Run smoke-only E2E tests (API checks, no browser)'
 
+bootstrap:
+	@./scripts/bootstrap.sh
+
 setup: infra-setup core-setup knowledge-setup hello-setup news-setup claw-setup
 	@echo "Local development dependencies are prepared."
 
 infra-setup:
-	$(COMPOSE) pull traefik admin-stub postgres redis opensearch rabbitmq litellm
+	$(COMPOSE) pull traefik postgres redis opensearch rabbitmq litellm
 
 core-setup:
 	$(COMPOSE) build core
@@ -87,6 +102,15 @@ news-install:
 up:
 	$(COMPOSE) up --build -d
 
+agent-up:
+	$(COMPOSE) up --build -d $(name)
+
+agent-down:
+	$(COMPOSE) stop $(name)
+
+up-observability:
+	$(COMPOSE) up -d langfuse-web langfuse-worker
+
 down:
 	$(COMPOSE) down
 
@@ -107,6 +131,14 @@ logs-litellm:
 
 logs-openclaw:
 	$(COMPOSE) logs -f openclaw-gateway
+
+logs-langfuse:
+	$(COMPOSE) logs -f langfuse-web langfuse-worker
+
+litellm-db-init:
+	$(COMPOSE) up -d postgres
+	@printf "SELECT 'CREATE DATABASE litellm' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'litellm')\\gexec\n" | $(COMPOSE) exec -T postgres psql -U app -d ai_community_platform
+	$(COMPOSE) up -d litellm
 
 migrate:
 	$(COMPOSE) exec core php bin/console doctrine:migrations:migrate --no-interaction
@@ -158,6 +190,12 @@ knowledge-cs-fix:
 
 agent-discover:
 	$(COMPOSE) exec core php bin/console agent:discovery
+
+logs-setup:
+	$(COMPOSE) exec core php bin/console logs:index:setup
+
+logs-cleanup:
+	$(COMPOSE) exec core php bin/console logs:cleanup
 
 conventions-test:
 	cd tests/agent-conventions && npm install && AGENT_URL=$(AGENT_URL) npx codeceptjs run --steps
