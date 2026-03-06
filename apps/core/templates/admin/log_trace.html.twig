@@ -14,95 +14,149 @@
         </div>
 
         <div class="trace-sequence" style="margin-bottom: 2rem; border: 1px solid var(--bg-card-border); padding: 1rem; border-radius: 8px;">
-            <h3 style="margin-top: 0; font-size: 1rem;">Sequence Diagram</h3>
-            {% set participantIndex = {} %}
-            {% for participant in participants %}
-                {% set participantIndex = participantIndex|merge({ (participant): loop.index0 }) %}
-            {% endfor %}
-            {% set laneCount = participants|length > 0 ? participants|length : 1 %}
-            {% set laneDenominator = laneCount > 1 ? laneCount - 1 : 1 %}
+            <div class="trace-sequence-header">
+                <h3 style="margin-top: 0; margin-bottom: 0; font-size: 1rem;">Trace View</h3>
+                <div class="trace-view-toggle" role="tablist" aria-label="Trace view mode">
+                    <button type="button" class="btn btn-settings trace-view-btn active" data-trace-view-button="diagram" onclick="switchTraceView('diagram')">Diagram</button>
+                    <button type="button" class="btn btn-settings trace-view-btn" data-trace-view-button="classic" onclick="switchTraceView('classic')">Classic</button>
+                </div>
+            </div>
 
-            <div class="sequence-diagram">
-                <div class="sequence-canvas">
-                    <div class="sequence-participants" style="--lane-count: {{ laneCount }};">
-                        {% for participant in participants %}
-                            <div class="sequence-participant">
-                                <span class="badge app-col app-col-{{ participant|replace({'-': ''})|lower }}">{{ participant }}</span>
-                            </div>
-                        {% endfor %}
+            <div id="trace-view-diagram" class="trace-view-pane active">
+                {% set participantIndex = {} %}
+                {% for participant in call_participants %}
+                    {% set participantIndex = participantIndex|merge({ (participant): loop.index0 }) %}
+                {% endfor %}
+                {% set laneCount = call_participants|length > 0 ? call_participants|length : 1 %}
+                {% set laneDenominator = laneCount > 1 ? laneCount - 1 : 1 %}
+
+                <div class="sequence-diagram">
+                    <div class="sequence-canvas">
+                        <div class="sequence-participants" style="--lane-count: {{ laneCount }};">
+                            {% for participant in call_participants %}
+                                <div class="sequence-participant">
+                                    <span class="badge app-col app-col-{{ participant|replace({'-': ''})|lower }}">{{ participant }}</span>
+                                </div>
+                            {% else %}
+                                <div class="sequence-participant">
+                                    <span class="badge">No call events</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="sequence-rows">
+                            {% for event in sequence_call_events %}
+                                {% set statusClass = event.status == 'failed' ? 'is-failed' : (event.status == 'started' ? 'is-started' : 'is-completed') %}
+                                {% set fromIdx = participantIndex[event.from]|default(0) %}
+                                {% set toIdx = participantIndex[event.to]|default(fromIdx) %}
+                                {% set startPercent = (fromIdx / laneDenominator) * 100 %}
+                                {% set endPercent = (toIdx / laneDenominator) * 100 %}
+                                {% set rawWidth = ((toIdx - fromIdx)|abs / laneDenominator) * 100 %}
+                                {% set width = rawWidth < 2 ? 2 : rawWidth %}
+                                {% set leftBase = min(startPercent, endPercent) %}
+                                {% set left = rawWidth < 2 ? (leftBase > 98 ? 98 : leftBase) : leftBase %}
+                                {% set center = left + (width / 2) %}
+                                {% set direction = toIdx >= fromIdx ? 'forward' : 'backward' %}
+
+                                <div class="sequence-event sequence-row {{ statusClass }}">
+                                    <div class="sequence-lanes" style="--lane-count: {{ laneCount }};">
+                                        {% for _participant in call_participants %}
+                                            <span class="sequence-lane"></span>
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="sequence-arrow-wrap">
+                                        <div class="sequence-arrow {{ direction }}" style="left: {{ left }}%; width: {{ width }}%;"></div>
+                                        <span class="sequence-arrow-label" style="left: {{ center }}%;">
+                                            {{ event.operation }}
+                                            <small>{{ event.step }} · {{ event.status|upper }}{% if event.duration_ms > 0 %} · {{ event.duration_ms }} ms{% endif %}</small>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            class="sequence-detail-icon"
+                                            style="left: {{ center }}%;"
+                                            title="Показати деталі"
+                                            onclick="toggleSequenceDetail('seq-detail-{{ loop.index0 }}')"
+                                        >i</button>
+                                    </div>
+
+                                    <div id="seq-detail-{{ loop.index0 }}" class="sequence-detail-panel">
+                                        <div>
+                                            <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Event</div>
+                                            <pre style="margin:0;max-height:220px;overflow:auto;">{{ {
+                                                event_name: event.event_name,
+                                                step: event.step,
+                                                from: event.from,
+                                                to: event.to,
+                                                request_id: event.request_id,
+                                                trace_id: event.trace_id,
+                                                error_code: event.details.error_code,
+                                                http_status_code: event.details.http_status_code,
+                                                task_id: event.details.task_id
+                                            }|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                        </div>
+                                        <div>
+                                            <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Input</div>
+                                            <pre style="margin:0;max-height:220px;overflow:auto;">{{ event.details.input is not null ? event.details.input|json_encode(constant('JSON_PRETTY_PRINT')) : '—' }}</pre>
+                                        </div>
+                                        <div>
+                                            <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Output</div>
+                                            <pre style="margin:0;max-height:220px;overflow:auto;">{{ event.details.output is not null ? event.details.output|json_encode(constant('JSON_PRETTY_PRINT')) : '—' }}</pre>
+                                        </div>
+                                        <div>
+                                            <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Headers / Meta</div>
+                                            <pre style="margin:0;max-height:220px;overflow:auto;">{{ {
+                                                headers: event.details.headers,
+                                                capture_meta: event.details.capture_meta,
+                                                exception: event.details.exception
+                                            }|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div style="color: var(--text-muted);">Немає call-подій (A2A/LLM) для diagram-режиму. У Classic видно всі кроки.</div>
+                            {% endfor %}
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="sequence-rows">
-                        {% for event in sequence_events %}
-                            {% set statusClass = event.status == 'failed' ? 'is-failed' : (event.status == 'started' ? 'is-started' : 'is-completed') %}
-                            {% set fromIdx = participantIndex[event.from]|default(0) %}
-                            {% set toIdx = participantIndex[event.to]|default(fromIdx) %}
-                            {% set startPercent = (fromIdx / laneDenominator) * 100 %}
-                            {% set endPercent = (toIdx / laneDenominator) * 100 %}
-                            {% set rawWidth = ((toIdx - fromIdx)|abs / laneDenominator) * 100 %}
-                            {% set width = rawWidth < 2 ? 2 : rawWidth %}
-                            {% set leftBase = min(startPercent, endPercent) %}
-                            {% set left = rawWidth < 2 ? (leftBase > 98 ? 98 : leftBase) : leftBase %}
-                            {% set center = left + (width / 2) %}
-                            {% set direction = toIdx >= fromIdx ? 'forward' : 'backward' %}
-
-                            <div class="sequence-event sequence-row {{ statusClass }}">
-                                <div class="sequence-lanes" style="--lane-count: {{ laneCount }};">
-                                    {% for _participant in participants %}
-                                        <span class="sequence-lane"></span>
-                                    {% endfor %}
-                                </div>
-
-                                <div class="sequence-arrow-wrap">
-                                    <div class="sequence-arrow {{ direction }}" style="left: {{ left }}%; width: {{ width }}%;"></div>
-                                    <span class="sequence-arrow-label" style="left: {{ center }}%;">
-                                        {{ event.operation }}
-                                        <small>{{ event.status|upper }}{% if event.duration_ms > 0 %} · {{ event.duration_ms }} ms{% endif %}</small>
-                                    </span>
-                                    <button
-                                        type="button"
-                                        class="sequence-detail-icon"
-                                        style="left: {{ center }}%;"
-                                        title="Показати деталі"
-                                        onclick="toggleSequenceDetail('seq-detail-{{ loop.index0 }}')"
-                                    >i</button>
-                                </div>
-
-                                <div id="seq-detail-{{ loop.index0 }}" class="sequence-detail-panel">
-                                    <div>
-                                        <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Event</div>
-                                        <pre style="margin:0;max-height:220px;overflow:auto;">{{ {
-                                            event_name: event.event_name,
-                                            step: event.step,
-                                            from: event.from,
-                                            to: event.to,
-                                            request_id: event.request_id,
-                                            trace_id: event.trace_id,
-                                            error_code: event.details.error_code
-                                        }|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
-                                    </div>
-                                    <div>
-                                        <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Input</div>
-                                        <pre style="margin:0;max-height:220px;overflow:auto;">{{ event.details.input is not null ? event.details.input|json_encode(constant('JSON_PRETTY_PRINT')) : '—' }}</pre>
-                                    </div>
-                                    <div>
-                                        <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Output</div>
-                                        <pre style="margin:0;max-height:220px;overflow:auto;">{{ event.details.output is not null ? event.details.output|json_encode(constant('JSON_PRETTY_PRINT')) : '—' }}</pre>
-                                    </div>
-                                    <div>
-                                        <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem;">Headers / Meta</div>
-                                        <pre style="margin:0;max-height:220px;overflow:auto;">{{ {
-                                            headers: event.details.headers,
-                                            capture_meta: event.details.capture_meta,
-                                            exception: event.details.exception
-                                        }|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
-                                    </div>
-                                </div>
+            <div id="trace-view-classic" class="trace-view-pane">
+                <div class="sequence-classic-list">
+                    {% for event in sequence_events %}
+                        {% set statusClass = event.status == 'failed' ? 'is-failed' : (event.status == 'started' ? 'is-started' : 'is-completed') %}
+                        <details class="sequence-classic-item {{ statusClass }}" {% if loop.first %}open{% endif %}>
+                            <summary>
+                                <span class="sequence-classic-main">
+                                    <span class="badge app-col app-col-{{ event.from|replace({'-': ''})|lower }}">{{ event.from }}</span>
+                                    <span class="sequence-classic-arrow">→</span>
+                                    <span class="badge app-col app-col-{{ event.to|replace({'-': ''})|lower }}">{{ event.to }}</span>
+                                    <span class="sequence-classic-op">{{ event.operation }}</span>
+                                </span>
+                                <span class="sequence-classic-meta">{{ event.step }} · {{ event.status|upper }}{% if event.duration_ms > 0 %} · {{ event.duration_ms }} ms{% endif %}</span>
+                            </summary>
+                            <div class="sequence-classic-detail">
+                                <pre style="margin:0;max-height:220px;overflow:auto;">{{ {
+                                    event_name: event.event_name,
+                                    step: event.step,
+                                    from: event.from,
+                                    to: event.to,
+                                    request_id: event.request_id,
+                                    trace_id: event.trace_id,
+                                    input: event.details.input,
+                                    output: event.details.output,
+                                    headers: event.details.headers,
+                                    capture_meta: event.details.capture_meta,
+                                    exception: event.details.exception,
+                                    error_code: event.details.error_code,
+                                    http_status_code: event.details.http_status_code,
+                                    task_id: event.details.task_id
+                                }|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
                             </div>
-                        {% else %}
-                            <div style="color: var(--text-muted);">Немає структурованих trace-подій для sequence-відображення.</div>
-                        {% endfor %}
-                    </div>
+                        </details>
+                    {% else %}
+                        <div style="color: var(--text-muted);">Немає структурованих trace-подій.</div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -176,5 +230,40 @@
         }
         el.classList.toggle('active');
     }
+
+    function setTraceView(view) {
+        var panes = document.querySelectorAll('.trace-view-pane');
+        var buttons = document.querySelectorAll('[data-trace-view-button]');
+
+        panes.forEach(function (pane) {
+            pane.classList.toggle('active', pane.id === 'trace-view-' + view);
+        });
+
+        buttons.forEach(function (button) {
+            button.classList.toggle('active', button.getAttribute('data-trace-view-button') === view);
+        });
+    }
+
+    function switchTraceView(view) {
+        setTraceView(view);
+        try {
+            localStorage.setItem('trace_view_mode', view);
+        } catch (e) {
+            // no-op
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var initial = 'diagram';
+        try {
+            initial = localStorage.getItem('trace_view_mode') || 'diagram';
+        } catch (e) {
+            initial = 'diagram';
+        }
+        if (initial !== 'classic' && initial !== 'diagram') {
+            initial = 'diagram';
+        }
+        setTraceView(initial);
+    });
     </script>
 {% endblock %}

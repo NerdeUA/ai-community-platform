@@ -115,6 +115,8 @@ final class LogTraceController extends AbstractController
             'spans' => $processedSpans,
             'sequence_events' => $sequenceProjection['events'],
             'participants' => $sequenceProjection['participants'],
+            'sequence_call_events' => $sequenceProjection['call_events'],
+            'call_participants' => $sequenceProjection['call_participants'],
             'total_duration_ms' => round((float) $totalDurationMs, 2),
         ]);
     }

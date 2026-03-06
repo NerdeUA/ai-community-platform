@@ -81,22 +81,36 @@
                             <td>
                                 <strong>{{ agent.name }}</strong>
                                 <details>
-                                    <summary>Деталі маніфесту</summary>
+                                    <summary>Agent Card</summary>
                                     <div>
+                                        {% if manifest.provider is defined and manifest.provider.organization is defined %}
+                                            <p><strong>Provider:</strong> {{ manifest.provider.organization }}</p>
+                                        {% endif %}
+                                        {% if manifest.capabilities is defined %}
+                                            <p><strong>Capabilities:</strong>
+                                                streaming={{ manifest.capabilities.streaming|default(false) ? 'yes' : 'no' }},
+                                                push={{ manifest.capabilities.pushNotifications|default(false) ? 'yes' : 'no' }}
+                                            </p>
+                                        {% endif %}
                                         {% if manifest.commands is defined and manifest.commands|length > 0 %}
                                             <p><strong>Команди:</strong> {{ manifest.commands|join(', ') }}</p>
                                         {% endif %}
                                         {% if manifest.events is defined and manifest.events|length > 0 %}
                                             <p><strong>Події:</strong> {{ manifest.events|join(', ') }}</p>
                                         {% endif %}
-                                        {% if manifest.capabilities is defined and manifest.capabilities|length > 0 %}
-                                            <p><strong>Можливості:</strong> {{ manifest.capabilities|join(', ') }}</p>
+                                        {% if manifest.skills is defined and manifest.skills|length > 0 %}
+                                            <p><strong>Skills:</strong>
+                                            {% for skill in manifest.skills %}
+                                                {% if skill is iterable and skill.id is defined %}{{ skill.id }}{% else %}{{ skill }}{% endif %}{% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                            </p>
                                         {% endif %}
                                         {% if manifest.permissions is defined %}
                                             <p><strong>Дозволи:</strong> {{ manifest.permissions|join(', ') }}</p>
                                         {% endif %}
-                                        {% if manifest.a2a_endpoint is defined %}
-                                            <p><strong>A2A:</strong> {{ manifest.a2a_endpoint }}</p>
+                                        {% set a2aUrl = manifest.url|default(manifest.a2a_endpoint|default('')) %}
+                                        {% if a2aUrl %}
+                                            <p><strong>A2A Endpoint:</strong> {{ a2aUrl }}</p>
                                         {% endif %}
                                         {% if agent.config != '{}' %}
                                             <p><strong>Конфіг:</strong></p>
@@ -104,6 +118,42 @@
                                         {% endif %}
                                     </div>
                                 </details>
+                                <details>
+                                    <summary>Raw JSON</summary>
+                                    <pre>{{ manifest|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES')) }}</pre>
+                                </details>
+                                {% set a2aUrl = manifest.url|default(manifest.a2a_endpoint|default('')) %}
+                                {% if a2aUrl %}
+                                <details>
+                                    <summary>A2A Server</summary>
+                                    <div>
+                                        <p><strong>Endpoint:</strong> {{ a2aUrl }}</p>
+                                        {% if manifest.skills is defined and manifest.skills|length > 0 %}
+                                            <p><strong>Skills:</strong></p>
+                                            <ul style="margin:0;padding-left:1.2rem;">
+                                                {% for skill in manifest.skills %}
+                                                    <li>
+                                                        {% if skill is iterable and skill.id is defined %}
+                                                            <code>{{ skill.id }}</code>
+                                                            {% if skill.description is defined and skill.description %}
+                                                                — {{ skill.description }}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            <code>{{ skill }}</code>
+                                                            {% if manifest.skill_schemas is defined and manifest.skill_schemas[skill] is defined and manifest.skill_schemas[skill].description is defined %}
+                                                                — {{ manifest.skill_schemas[skill].description }}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% endif %}
+                                        {% if manifest.health_url is defined %}
+                                            <p><strong>Health URL:</strong> {{ manifest.health_url }}</p>
+                                        {% endif %}
+                                    </div>
+                                </details>
+                                {% endif %}
                             </td>
                             <td>{{ agent.version }}</td>
                             <td>{{ manifest.description ?? '—' }}</td>
@@ -153,6 +203,10 @@
                                             onclick="toggleAgent('{{ agent.name|e('js') }}', 'enable')">Увімкнути</button>
                                 {% endif %}
                                 <a href="{{ path('admin_agent_settings', {name: agent.name}) }}" class="btn btn-settings">Налаштування</a>
+                                {% if not agent.enabled and agent.health_status in ['unavailable', 'error'] %}
+                                    <button type="button" class="btn btn-delete"
+                                            onclick="deleteAgent('{{ agent.name|e('js') }}')">Видалити</button>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}
@@ -213,6 +267,20 @@ function toggleAgent(name, action) {
     .then(function(r) {
         if (r.ok) { location.reload(); }
         else { alert('Помилка: ' + r.status); }
+    })
+    .catch(function() { alert('Помилка мережі'); });
+}
+
+function deleteAgent(name) {
+    if (!confirm('Видалити агент ' + name + '?\n\nВсі налаштування, конфігурація та історія будуть видалені безповоротно. Цю дію неможливо скасувати.')) return;
+
+    fetch('/api/v1/internal/agents/' + encodeURIComponent(name), {
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) {
+        if (r.ok) { location.reload(); }
+        else { r.json().then(function(d) { alert(d.error || 'Помилка: ' + r.status); }); }
     })
     .catch(function() { alert('Помилка мережі'); });
 }

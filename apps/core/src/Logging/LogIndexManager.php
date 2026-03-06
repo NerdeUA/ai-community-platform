@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Logging;
 
-final class LogIndexManager
+final class LogIndexManager implements LogSearchInterface
 {
     private const INDEX_PREFIX = 'platform_logs';
     private const TEMPLATE_NAME = 'platform_logs_template';
@@ -49,8 +49,13 @@ final class LogIndexManager
                         'status' => ['type' => 'keyword'],
                         'error_code' => ['type' => 'keyword'],
                         'agent_run_id' => ['type' => 'keyword'],
+                        'task_id' => ['type' => 'keyword'],
+                        'http_status_code' => ['type' => 'integer'],
                         'duration_ms' => ['type' => 'integer'],
                         'sequence_order' => ['type' => 'long'],
+                        'session_key' => ['type' => 'keyword'],
+                        'sender' => ['type' => 'keyword'],
+                        'recipient' => ['type' => 'keyword'],
                         'context' => ['type' => 'object', 'enabled' => false],
                         'extra' => ['type' => 'object', 'enabled' => false],
                         'exception' => [

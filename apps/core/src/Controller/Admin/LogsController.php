@@ -18,6 +18,17 @@ final class LogsController extends AbstractController
     private const LEVELS = ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
     private const APPS = ['core', 'knowledge-agent', 'hello-agent', 'news-maker-agent'];
 
+    /** @var array<string, array{label: string, prefixes?: list<string>, terms?: list<string>, term?: array<string, string>}> */
+    private const CATEGORIES = [
+        'chat' => ['label' => 'Чати (A2A)', 'prefixes' => ['core.invoke.', 'core.a2a.', 'hello.a2a.']],
+        'chat_start' => ['label' => 'Початок чатів', 'terms' => ['core.invoke.received']],
+        'llm' => ['label' => 'LLM виклики', 'prefixes' => ['hello.llm.']],
+        'intent' => ['label' => 'Обробка намірів', 'prefixes' => ['hello.intent.']],
+        'discovery' => ['label' => 'Виявлення агентів', 'prefixes' => ['core.discovery.', 'core.agent_card.']],
+        'observability' => ['label' => 'Спостережуваність', 'prefixes' => ['hello.langfuse.']],
+        'error' => ['label' => 'Помилки', 'term' => ['status' => 'failed']],
+    ];
+
     public function __construct(
         private readonly LogIndexManager $indexManager,
     ) {
@@ -29,11 +40,12 @@ final class LogsController extends AbstractController
         $query = trim((string) $request->query->get('q', ''));
         $level = $request->query->get('level', '');
         $app = $request->query->get('app', '');
+        $category = $request->query->get('category', '');
         $dateFrom = $request->query->get('from', '');
         $dateTo = $request->query->get('to', '');
         $page = max(1, $request->query->getInt('page', 1));
 
-        $searchBody = $this->buildSearchQuery($query, (string) $level, (string) $app, (string) $dateFrom, (string) $dateTo, $page);
+        $searchBody = $this->buildSearchQuery($query, (string) $level, (string) $app, (string) $category, (string) $dateFrom, (string) $dateTo, $page);
         $result = $this->indexManager->search($searchBody);
 
         $hits = [];
@@ -58,17 +70,19 @@ final class LogsController extends AbstractController
             'q' => $query,
             'level' => $level,
             'app_filter' => $app,
+            'category' => $category,
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
             'levels' => self::LEVELS,
             'apps' => self::APPS,
+            'categories' => self::CATEGORIES,
         ]);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function buildSearchQuery(string $query, string $level, string $app, string $dateFrom, string $dateTo, int $page): array
+    private function buildSearchQuery(string $query, string $level, string $app, string $category, string $dateFrom, string $dateTo, int $page): array
     {
         $must = [];
         $filter = [];
@@ -98,6 +112,12 @@ final class LogsController extends AbstractController
 
         if ('' !== $app) {
             $filter[] = ['term' => ['app_name' => $app]];
+        }
+
+        if ('' !== $category && isset(self::CATEGORIES[$category])) {
+            $catDef = self::CATEGORIES[$category];
+
+            $filter[] = $this->buildCategoryFilter($catDef);
         }
 
         $range = [];
@@ -131,5 +151,32 @@ final class LogsController extends AbstractController
         }
 
         return $body;
+    }
+
+    /**
+     * @param array<string, mixed> $catDef
+     *
+     * @return array<string, mixed>
+     */
+    private function buildCategoryFilter(array $catDef): array
+    {
+        if (isset($catDef['prefixes']) && \is_array($catDef['prefixes'])) {
+            $should = [];
+            foreach ($catDef['prefixes'] as $prefix) {
+                $should[] = ['prefix' => ['event_name' => $prefix]];
+            }
+
+            return ['bool' => ['should' => $should, 'minimum_should_match' => 1]];
+        }
+
+        if (isset($catDef['terms']) && \is_array($catDef['terms'])) {
+            return ['terms' => ['event_name' => $catDef['terms']]];
+        }
+
+        if (isset($catDef['term']) && \is_array($catDef['term'])) {
+            return ['term' => $catDef['term']];
+        }
+
+        return ['match_all' => (object) []];
     }
 }

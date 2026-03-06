@@ -1,11 +1,85 @@
 {% extends 'admin/layout.html.twig' %}
 
-{% block title %}Управління чатами — Admin{% endblock %}
-{% block page_title %}Управління чатами{% endblock %}
+{% block title %}Чати — Admin{% endblock %}
+{% block page_title %}Чати{% endblock %}
 
 {% block content %}
-    <div class="glass-card stub-content">
-        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12zM7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/></svg>
-        <p>В розробці</p>
+    <div class="glass-card">
+        <form method="get" action="{{ path('admin_chats') }}" class="log-filter-form">
+            <div class="log-filter-row" style="margin-bottom:1rem;">
+                <div class="log-filter-field">
+                    <label class="form-label">Агент</label>
+                    <input type="text" name="agent" value="{{ agent_filter }}" placeholder="hello-agent, knowledge-agent…" class="form-input">
+                </div>
+                <div class="log-filter-field">
+                    <label class="form-label">Статус</label>
+                    <input type="text" name="status" value="{{ status_filter }}" placeholder="completed, failed…" class="form-input">
+                </div>
+                <div class="log-filter-field" style="flex:0 0 auto;">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Фільтр</button>
+                </div>
+            </div>
+        </form>
+
+        {% if chats is empty %}
+            <div class="stub-content" style="min-height:200px;">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12zM7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/></svg>
+                <p>Немає чатів</p>
+            </div>
+        {% else %}
+            <div style="overflow-x:auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Trace ID</th>
+                            <th>Агент</th>
+                            <th>Навичка</th>
+                            <th>Статус</th>
+                            <th>Повідомлень</th>
+                            <th>Тривалість</th>
+                            <th>Перше</th>
+                            <th>Останнє</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chat in chats %}
+                            <tr class="chat-row" onclick="window.location='{{ path('admin_chat_detail', {traceId: chat.sessionKey}) }}'" style="cursor:pointer;">
+                                <td>
+                                    <a href="{{ path('admin_log_trace', {traceId: chat.sessionKey}) }}" class="chat-trace-link" onclick="event.stopPropagation();" title="{{ chat.sessionKey }}">{{ chat.sessionKey[:20] }}…</a>
+                                </td>
+                                <td><span class="badge badge-channel">{{ chat.agent ?? '—' }}</span></td>
+                                <td><code style="font-size:.8rem;">{{ chat.skill ?? '—' }}</code></td>
+                                <td>
+                                    {% if chat.status == 'completed' %}
+                                        <span class="badge badge-healthy">{{ chat.status }}</span>
+                                    {% elseif chat.status == 'failed' %}
+                                        <span class="badge badge-unhealthy">{{ chat.status }}</span>
+                                    {% else %}
+                                        <span class="badge">{{ chat.status ?? '—' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ chat.messageCount }}</td>
+                                <td>{{ chat.durationMs is not null ? chat.durationMs ~ 'ms' : '—' }}</td>
+                                <td><span class="trace-time">{{ chat.firstMessageAt[:19]|replace({'T': ' '}) }}</span></td>
+                                <td><span class="trace-time">{{ chat.lastMessageAt[:19]|replace({'T': ' '}) }}</span></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if pages > 1 %}
+                <div class="log-pagination">
+                    {% if page > 1 %}
+                        <a href="{{ path('admin_chats', {page: page - 1, agent: agent_filter, status: status_filter}) }}" class="btn btn-settings">&larr; Назад</a>
+                    {% endif %}
+                    <span style="color:var(--text-secondary);font-size:.85rem;">Сторінка {{ page }} з {{ pages }} ({{ total }} чатів)</span>
+                    {% if page < pages %}
+                        <a href="{{ path('admin_chats', {page: page + 1, agent: agent_filter, status: status_filter}) }}" class="btn btn-settings">Далі &rarr;</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endif %}
     </div>
 {% endblock %}

@@ -52,9 +52,9 @@
         </form>
     </div>
 
-    {# Manifest info #}
+    {# Agent Card info #}
     <div class="glass-card" style="margin-bottom:1.5rem;">
-        <h2>Маніфест</h2>
+        <h2>Agent Card</h2>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:.5rem 1rem;font-size:.9rem;">
             <span style="color:var(--text-muted);">Версія:</span>
             <span>{{ agent.version }}</span>
@@ -70,9 +70,17 @@
                 <span style="color:var(--text-muted);">Події:</span>
                 <span>{{ manifest.events|join(', ') }}</span>
             {% endif %}
-            {% if manifest.capabilities is defined and manifest.capabilities|length > 0 %}
-                <span style="color:var(--text-muted);">Можливості:</span>
-                <span>{{ manifest.capabilities|join(', ') }}</span>
+            {% if manifest.skills is defined and manifest.skills|length > 0 %}
+                <span style="color:var(--text-muted);">Skills:</span>
+                <span>
+                {% for skill in manifest.skills %}
+                    {% if skill is iterable and skill.id is defined %}{{ skill.id }}{% else %}{{ skill }}{% endif %}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+                </span>
+            {% endif %}
+            {% if manifest.capabilities is defined %}
+                <span style="color:var(--text-muted);">Capabilities:</span>
+                <span>streaming={{ manifest.capabilities.streaming|default(false) ? 'yes' : 'no' }}, push={{ manifest.capabilities.pushNotifications|default(false) ? 'yes' : 'no' }}</span>
             {% endif %}
         </div>
     </div>

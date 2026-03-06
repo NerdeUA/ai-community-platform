@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Logging\LogIndexManager;
+use Doctrine\DBAL\Connection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,11 +13,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'logs:cleanup', description: 'Delete old log indices based on retention policy')]
+#[AsCommand(name: 'logs:cleanup', description: 'Delete old log indices and audit records based on retention policy')]
 final class LogsCleanupCommand extends Command
 {
     public function __construct(
         private readonly LogIndexManager $indexManager,
+        private readonly Connection $connection,
         private readonly int $defaultRetentionDays,
         private readonly int $defaultMaxSizeGb,
     ) {
@@ -40,14 +42,24 @@ final class LogsCleanupCommand extends Command
         $dryRun = (bool) $input->getOption('dry-run');
 
         if ($dryRun) {
-            $io->note('DRY RUN — no indices will be deleted.');
+            $io->note('DRY RUN — nothing will be deleted.');
         }
+
+        $this->cleanupOpenSearchIndices($io, $maxAge, $maxSizeGb, $dryRun);
+        $this->cleanupAuditRecords($io, $maxAge, $dryRun);
+
+        return Command::SUCCESS;
+    }
+
+    private function cleanupOpenSearchIndices(SymfonyStyle $io, int $maxAge, int $maxSizeGb, bool $dryRun): void
+    {
+        $io->section('OpenSearch indices');
 
         $indices = $this->indexManager->listLogIndices();
         if ([] === $indices) {
             $io->success('No log indices found.');
 
-            return Command::SUCCESS;
+            return;
         }
 
         $io->text(sprintf('Found %d log index(es).', \count($indices)));
@@ -95,7 +107,35 @@ final class LogsCleanupCommand extends Command
 
         $action = $dryRun ? 'Would delete' : 'Deleted';
         $io->success(sprintf('%s %d index(es).', $action, $deleted));
+    }
 
-        return Command::SUCCESS;
+    private function cleanupAuditRecords(SymfonyStyle $io, int $maxAge, bool $dryRun): void
+    {
+        $io->section('Audit records (a2a_message_audit)');
+
+        $cutoff = (new \DateTimeImmutable())->modify(sprintf('-%d days', $maxAge))->format('Y-m-d H:i:s');
+
+        $count = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM a2a_message_audit WHERE created_at < :cutoff',
+            ['cutoff' => $cutoff],
+        );
+
+        if (0 === $count) {
+            $io->success('No old audit records to clean up.');
+
+            return;
+        }
+
+        $io->text(sprintf('Found %d audit record(s) older than %d days (before %s).', $count, $maxAge, $cutoff));
+
+        if (!$dryRun) {
+            $this->connection->executeStatement(
+                'DELETE FROM a2a_message_audit WHERE created_at < :cutoff',
+                ['cutoff' => $cutoff],
+            );
+        }
+
+        $action = $dryRun ? 'Would delete' : 'Deleted';
+        $io->success(sprintf('%s %d audit record(s).', $action, $count));
     }
 }

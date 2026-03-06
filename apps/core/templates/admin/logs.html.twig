@@ -21,6 +21,15 @@
                     </select>
                 </div>
                 <div class="log-filter-field">
+                    <label class="form-label" for="category">Категорія</label>
+                    <select id="category" name="category" class="form-input">
+                        <option value="">Всі</option>
+                        {% for key, cat in categories %}
+                            <option value="{{ key }}" {{ category == key ? 'selected' : '' }}>{{ cat.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="log-filter-field">
                     <label class="form-label" for="app">Додаток</label>
                     <select id="app" name="app" class="form-input">
                         <option value="">Всі</option>
@@ -101,11 +110,11 @@
         {% if pages > 1 %}
             <div class="log-pagination">
                 {% if page > 1 %}
-                    <a href="{{ path('admin_logs', {q: q, level: level, app: app_filter, from: date_from, to: date_to, page: page - 1}) }}" class="btn btn-settings">&laquo; Назад</a>
+                    <a href="{{ path('admin_logs', {q: q, level: level, category: category, app: app_filter, from: date_from, to: date_to, page: page - 1}) }}" class="btn btn-settings">&laquo; Назад</a>
                 {% endif %}
                 <span style="color:var(--text-secondary);font-size:.85rem;">Сторінка {{ page }} з {{ pages }}</span>
                 {% if page < pages %}
-                    <a href="{{ path('admin_logs', {q: q, level: level, app: app_filter, from: date_from, to: date_to, page: page + 1}) }}" class="btn btn-settings">Далі &raquo;</a>
+                    <a href="{{ path('admin_logs', {q: q, level: level, category: category, app: app_filter, from: date_from, to: date_to, page: page + 1}) }}" class="btn btn-settings">Далі &raquo;</a>
                 {% endif %}
             </div>
         {% endif %}
