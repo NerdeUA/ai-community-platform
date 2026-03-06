@@ -2,7 +2,7 @@
 
 ## Overview
 
-Each agent declares its storage requirements in the manifest's `storage` section. When an admin enables an agent, the platform automatically provisions the required resources (database, Redis DB, OpenSearch indices) before the agent starts.
+Each agent declares its storage requirements in the Agent Card's `storage` section. When an admin enables an agent, the platform provisions the required resources (database, Redis DB, OpenSearch indices) before the agent is marked as installed/enabled.
 
 ## Manifest `storage` Section
 
@@ -65,6 +65,8 @@ Index names are prefixed with the agent name: `{agent_name}_{collection}` (e.g.,
 4. Agent runs its Doctrine migrations (schema + seed data)
 5. Core marks `installed_at = now()` in registry
 6. Agent is enabled and synced with OpenClaw
+
+Discovery/registration alone does **not** provision storage. Provisioning is intentionally deferred to the **Enable** action to avoid side effects from passive discovery.
 
 Re-enabling a previously installed agent **skips provisioning** (installed_at already set).
 

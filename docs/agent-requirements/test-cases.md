@@ -12,14 +12,10 @@ Tests live in `tests/agent-conventions/` and target each agent via its Traefik-e
 ```
 tests/agent-conventions/
 ├── package.json
-├── codecept.conf.ts
-├── support/
-│   ├── manifest-schema.json     ← JSON Schema for manifest validation
-│   └── agents.ts                ← reads agent list from Traefik API or env
+├── codecept.conf.js
 └── tests/
-    ├── manifest_test.ts
-    ├── health_test.ts
-    └── a2a_test.ts
+    ├── manifest_test.js
+    └── health_test.js
 ```
 
 Run: `make conventions-test` (executes inside Docker network or via published ports)
@@ -28,7 +24,7 @@ Run: `make conventions-test` (executes inside Docker network or via published po
 
 ## TC-01: Manifest Endpoint
 
-**File**: `tests/manifest_test.ts`
+**File**: `tests/agent-conventions/tests/manifest_test.js`
 
 | ID | Test Case | Expected |
 |---|---|---|
@@ -36,25 +32,24 @@ Run: `make conventions-test` (executes inside Docker network or via published po
 | TC-01-02 | Response is valid JSON | No parse error |
 | TC-01-03 | `name` field exists and is a non-empty string | `typeof name === 'string' && name.length > 0` |
 | TC-01-04 | `version` field exists and matches semver `X.Y.Z` | `/^\d+\.\d+\.\d+$/.test(version)` |
-| TC-01-05 | `capabilities` field exists and is an array | `Array.isArray(capabilities)` |
-| TC-01-06 | If `capabilities` non-empty, `a2a_endpoint` is present and is a URL | URL parse succeeds |
+| TC-01-05 | `skills` field exists and is an array | `Array.isArray(skills)` |
+| TC-01-06 | If `skills` non-empty, `url` or legacy `a2a_endpoint` is present and is a URL | URL parse succeeds |
 | TC-01-07 | `Content-Type` header contains `application/json` | Header assertion |
 | TC-01-08 | Response time under 3000ms | Playwright timeout |
 
-```typescript
-// Example: tests/manifest_test.ts
+```javascript
+// Example: tests/agent-conventions/tests/manifest_test.js
 Feature('Manifest Convention');
 
 Scenario('manifest endpoint returns valid schema', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/manifest');
-  I.seeResponseCodeIs(200);
-  I.seeResponseContainsJson({ });  // not empty
-  const body = JSON.parse(res.data);
-  assert(typeof body.name === 'string' && body.name.length > 0, 'name required');
-  assert(/^\d+\.\d+\.\d+$/.test(body.version), 'version must be semver');
-  assert(Array.isArray(body.capabilities), 'capabilities must be array');
-  if (body.capabilities.length > 0) {
-    assert(body.a2a_endpoint, 'a2a_endpoint required when capabilities declared');
+  I.assertEqual(res.status, 200);
+  const body = res.data;
+  I.assertTrue(typeof body.name === 'string' && body.name.length > 0, 'name required');
+  I.assertTrue(/^\d+\.\d+\.\d+$/.test(body.version), 'version must be semver');
+  I.assertTrue(Array.isArray(body.skills), 'skills must be array');
+  if (body.skills.length > 0) {
+    I.assertTruthy(body.url || body.a2a_endpoint, 'url or a2a_endpoint required when skills declared');
   }
 });
 ```
@@ -63,7 +58,7 @@ Scenario('manifest endpoint returns valid schema', async ({ I }) => {
 
 ## TC-02: Health Endpoint
 
-**File**: `tests/health_test.ts`
+**File**: `tests/agent-conventions/tests/health_test.js`
 
 | ID | Test Case | Expected |
 |---|---|---|
@@ -74,9 +69,9 @@ Scenario('manifest endpoint returns valid schema', async ({ I }) => {
 
 ---
 
-## TC-03: A2A Endpoint (conditional — only if capabilities declared)
+## TC-03: A2A Endpoint (conditional — only if skills declared)
 
-**File**: `tests/a2a_test.ts`
+Current status: baseline A2A behavior is validated in platform functional/E2E suites; a dedicated conventions test file is planned.
 
 | ID | Test Case | Expected |
 |---|---|---|
@@ -90,7 +85,7 @@ Scenario('manifest endpoint returns valid schema', async ({ I }) => {
 Minimum valid request payload for TC-03-01:
 ```json
 {
-  "tool":       "<first capability from manifest>",
+  "tool":       "<first skill from Agent Card>",
   "input":      {},
   "trace_id":   "00000000-0000-0000-0000-000000000001",
   "request_id": "00000000-0000-0000-0000-000000000002"
@@ -133,6 +128,6 @@ Tests run as part of the pipeline after `docker compose up`. Failures block merg
 ## Adding Tests for a New Convention
 
 1. Add the test case table to this document
-2. Implement the test in `tests/agent-conventions/tests/`
+2. Implement or update the test in `tests/agent-conventions/tests/`
 3. Add assertion to `AgentConventionVerifier` in core (for runtime checks)
 4. Update `make conventions-test` if new dependencies required

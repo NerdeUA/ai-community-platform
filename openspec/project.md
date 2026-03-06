@@ -122,8 +122,9 @@ Current expectation:
 
 - use small, focused changes
 - keep documentation, specs, and implementation aligned
-- use OpenSpec change proposals for new capabilities, architecture changes, and other non-trivial product changes
-- avoid implementing major capability changes before the relevant proposal is reviewed
+- MVP conflict policy: if contracts, docs, or implementation conflict, the team MAY perform breaking rewrites/refactors to restore a coherent architecture
+- for this MVP phase, EVERY change starts with an OpenSpec proposal in `openspec/changes/<change-id>/` before implementation
+- avoid implementing any change before the relevant proposal is reviewed
 - use `GitLab CI` as the default CI system
 - use `glab` as the preferred CLI for GitLab-native workflows when working with merge requests and pipelines
 

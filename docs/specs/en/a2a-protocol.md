@@ -1,64 +1,77 @@
 # A2A Protocol For Agents
 
-## Goal
-
-`A2A` (`agent-to-agent`) is the internal interaction contract between the core-agent, specialized agents, and other platform modules that perform autonomous tasks.
-
 ## Purpose
 
-A2A exists so that:
+This document defines how the platform aligns with the official A2A protocol while documenting the current implementation profile used in this repository.
 
-- the core-agent can delegate work to other agents
-- responses stay uniform regardless of the implementation of each agent
-- clarification loops and multi-step orchestration run through one contract
+It is intentionally explicit about:
 
-## Core Requirements
+- official A2A concepts we follow
+- platform-specific transport choices used today
+- migration path toward closer protocol alignment
 
-- A2A should be the unified protocol for all agent invocations
-- every agent should expose a clear discovery point or registry description
-- requests and responses must use a stable structure
-- call correlation must be explicit (`request_id`, `trace_id`, and optionally `conversation_id`)
+## Normative References
 
-## Minimum Interaction Model
+- Official A2A topics (fetched snapshot in this repo):
+  - `docs/fetched/a2a-protocol-org/en/key-concepts.md`
+  - `docs/fetched/a2a-protocol-org/en/life-of-a-task.md`
+  - `docs/fetched/a2a-protocol-org/en/streaming-and-async.md`
+  - `docs/fetched/a2a-protocol-org/en/agent-discovery.md`
 
-- a `request` contains context, intent, payload, and metadata
-- a `response` returns either a result, a clarification need, or an error
-- an agent must not return an unstructured arbitrary payload without a status
+## Alignment Strategy
 
-## Baseline Response Statuses
+- We align to official A2A domain concepts: `Agent Card`, `Task`, `Message`, `Part`, `Artifact`.
+- We keep explicit correlation across hops: `trace_id`, `request_id`, and step-level metadata.
+- For MVP and current rollout, we use a platform-specific HTTP JSON envelope instead of full JSON-RPC 2.0.
+- Async capabilities are phased:
+  - R1: `SendStreamingMessage` + `GetTask`-style polling
+  - R2: push notifications via webhook
 
-- `completed` — the agent completed the task successfully
-- `needs_clarification` — the agent requires additional input
-- `failed` — the agent could not complete the task correctly
-- `queued` — an optional future-facing status for async flows
+Async work is tracked in:
+`openspec/changes/add-a2a-streaming-and-push`.
 
-## Clarification Loop
+## Official Model vs Current Platform Profile
 
-- when an agent returns `needs_clarification`, it must state what is missing
-- the core-agent or orchestrator must be able to send a follow-up answer in the same logical chain
-- clarification must not break request correlation
+| Area | Official A2A Model | Current Platform Profile |
+|---|---|---|
+| Payload format | JSON-RPC 2.0 over HTTP(S) | REST-style JSON envelope (`tool`/`input` and downstream `intent`/`payload`) |
+| Core interaction object | `Message` or `Task` | Normalized response with `status`, optional `result`, optional `error` |
+| Discovery location | Agent Card via well-known URI is recommended | Agent Card exposed via `GET /api/v1/manifest` |
+| Agent invocation | RPC methods such as `SendMessage` | `POST /api/v1/a2a/send-message` at gateway, then HTTP POST to agent A2A endpoint |
+| Async transport | Polling + SSE + Push | Sync request/response in production path today; SSE/polling/push are staged via OpenSpec change |
+| Capability declaration | Agent Card declares async support (`capabilities.streaming`, `capabilities.pushNotifications`) and skills | Skills are declared in agent card profile; async flags are planned in streaming/push rollout |
+| Security metadata | Agent Card `security` + HTTP auth mechanisms | HTTP token-based auth in gateway and internal platform headers/tokens |
 
-## Payload Requirements
+## Interaction Modes
 
-- payloads must be structured
-- sources, evidence, or supporting context should be passed as explicit fields rather than only plain text
-- agent-specific fields are allowed if they do not break the base envelope contract
+| Mode | Official A2A | Platform Status (2026-03-06) |
+|---|---|---|
+| Request/Response | Supported | Implemented and primary |
+| Polling for task updates | Supported | Planned as explicit `GetTask`-style endpoint in R1 |
+| SSE streaming | Supported | Planned in R1 (`send-streaming-message`) |
+| Push notifications | Supported | Planned in R2 |
 
-## Timeouts, Retries, Idempotency
+## Task Lifecycle Profile
 
-- a repeated call with the same `request_id` must not create unpredictable duplication
-- timeouts should be an explicit part of the invocation contract
-- retry behavior should be controlled and must not create retry storms
+The platform task/status model is aligned conceptually with official task lifecycle semantics:
 
-## Agent Requirements
+- non-terminal states are tracked explicitly during execution
+- terminal states are immutable once persisted
+- follow-up interactions should preserve correlation and context continuity
 
-- every agent should either support A2A directly or be adapted through a platform-owned wrapper
-- an agent must not break the baseline envelope contract
-- errors must be returned in a structured way, not silently
+Current and planned statuses in platform profile:
 
-## Step-Level Observability Requirements
+- `submitted`
+- `working`
+- `input_required`
+- `completed`
+- `failed`
+- `canceled`
+- `rejected`
 
-Every critical A2A chain step should emit structured logs with:
+## Correlation and Observability Contract
+
+Every critical A2A step MUST emit structured telemetry with:
 
 - `event_name`
 - `step`
@@ -67,20 +80,26 @@ Every critical A2A chain step should emit structured logs with:
 - `trace_id`
 - `request_id`
 - `status`
-- `duration_ms` (for terminal events)
+- `duration_ms` (for terminal steps)
 - `sequence_order`
 
-For debugging, services should capture sanitized context fields:
+Sanitized diagnostic context SHOULD include:
 
 - `step_input`
 - `step_output`
-- `request_headers` (sanitized)
-- `capture_meta` (`is_truncated`, `original_size_bytes`, `captured_size_bytes`, `redacted_fields_count`, `truncated_values_count`)
+- `request_headers`
+- `capture_meta`
 
-Secrets (`token`, `authorization`, `api_key`, `secret`, `password`, `cookie`) must be redacted before log persistence.
+Secrets (`token`, `authorization`, `api_key`, `secret`, `password`, `cookie`) MUST be redacted before persistence.
 
-## Out Of Scope For MVP
+## Compatibility Rules For New Changes
 
-- a complex streaming protocol
+- New A2A-facing features SHOULD use official terminology (`Agent Card`, `Task`, `Skill`, `A2A Client`, `A2A Server`).
+- Existing synchronous clients of `POST /api/v1/a2a/send-message` MUST remain backward compatible during R1.
+- Any new async behavior MUST preserve polling recovery semantics (stream/push are not the only source of truth).
+- If implementation diverges from official A2A transport semantics, the divergence MUST be documented in this file and in the related OpenSpec change.
+
+## Out Of Scope For Current Release (R1)
+
 - inter-cluster agent federation
 - arbitrary incompatible agent-specific transport models

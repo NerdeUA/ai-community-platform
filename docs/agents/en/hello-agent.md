@@ -1,12 +1,12 @@
 # Hello Agent
 
 ## Purpose
-Hello Agent is a minimal reference agent demonstrating the full agent lifecycle on the platform: client webview, manifest and health endpoint conventions, and admin configuration.
+Hello Agent is a minimal reference agent demonstrating the full agent lifecycle on the platform: client webview, Agent Card and health endpoint conventions, and admin configuration.
 
 ## Features
 - Webview at `/` — displays a greeting message (default: "Hello, World!")
 - `GET /health` — standard health check (`{"status": "ok"}`)
-- `GET /api/v1/manifest` — agent manifest per platform conventions
+- `GET /api/v1/manifest` — Agent Card per platform conventions
 - Configuration via admin panel: `description` and `system_prompt` fields
 
 ## Tech Stack

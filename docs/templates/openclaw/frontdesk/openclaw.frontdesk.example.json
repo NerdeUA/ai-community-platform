@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "lastTouchedAt": "2026-03-06T00:00:00.000Z"
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "litellm": {
+        "baseUrl": "http://litellm:4000/v1",
+        "apiKey": "${LITELLM_MASTER_KEY}",
+        "api": "openai-completions",
+        "headers": {
+          "x-litellm-end-user-id": "${OPENCLAW_END_USER_ID}"
+        },
+        "models": [
+          {
+            "id": "minimax/minimax-m2.5",
+            "name": "minimax/minimax-m2.5 (LiteLLM)",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 16000,
+            "maxTokens": 4096
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "litellm/minimax/minimax-m2.5"
+      },
+      "models": {
+        "litellm/minimax/minimax-m2.5": {}
+      },
+      "workspace": "/home/node/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      }
+    }
+  },
+  "tools": {
+    "profile": "messaging",
+    "alsoAllow": [
+      "platform-tools"
+    ]
+  },
+  "commands": {
+    "native": false,
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "dmPolicy": "pairing",
+      "groupPolicy": "open",
+      "groups": {
+        "*": {
+          "requireMention": true
+        }
+      },
+      "streaming": "partial",
+      "textChunkLimit": 4000
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    },
+    "controlUi": {
+      "dangerouslyAllowHostHeaderOriginFallback": true
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "plugins": {
+    "entries": {
+      "platform-tools": {
+        "enabled": true
+      }
+    }
+  }
+}

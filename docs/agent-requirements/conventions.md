@@ -32,11 +32,11 @@ pattern. The Docker label provides an explicit opt-in for non-standard service n
 
 ---
 
-## 2. Manifest Endpoint
+## 2. Agent Card Endpoint
 
 **`GET /api/v1/manifest`** — REQUIRED, no authentication.
 
-Returns agent metadata used by core for registration, capability routing, and OpenClaw tool catalog.
+Returns the Agent Card — agent metadata used by core for registration, skill routing, and the A2A Gateway skill catalog.
 
 ### Minimum valid response (HTTP 200):
 
@@ -44,26 +44,41 @@ Returns agent metadata used by core for registration, capability routing, and Op
 {
   "name": "knowledge-agent",
   "version": "1.2.0",
-  "capabilities": ["search_knowledge", "extract_from_messages"]
+  "url": "http://knowledge-agent/api/v1/knowledge/a2a",
+  "skills": [
+    { "id": "knowledge.search", "name": "Knowledge Search", "description": "Search the knowledge base" }
+  ]
 }
 ```
 
-### Full response schema:
+### Full response schema (aligned with official A2A AgentCard):
 
 ```json
 {
-  "name":         "string (required) — stable slug, kebab-case",
-  "version":      "string (required) — semver e.g. 1.0.0",
-  "description":  "string (optional)",
-  "capabilities": ["string", "..."] ,
-  "a2a_endpoint": "string (URL, required if capabilities non-empty)",
-  "health_url":   "string (URL, optional — defaults to /health on same host)",
-  "admin_url":    "string (URL, optional — link to agent admin panel)",
-  "capability_schemas": {
-    "<capability>": {
-      "input_schema": { "type": "object", "properties": {} }
+  "name":               "string (required) — stable slug, kebab-case",
+  "version":            "string (required) — semver e.g. 1.0.0",
+  "description":        "string (recommended)",
+  "url":                "string (URL) — A2A Server endpoint (replaces deprecated a2a_endpoint)",
+  "provider":           { "organization": "string", "url": "string (URL)" },
+  "capabilities":       { "streaming": false, "pushNotifications": false },
+  "defaultInputModes":  ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id":          "skill.name",
+      "name":        "Human-Readable Name",
+      "description": "What this skill does",
+      "tags":        ["tag1"],
+      "examples":    ["Example prompt"]
     }
-  }
+  ],
+  "skill_schemas": { "<skill-id>": { "input_schema": {} } },
+  "permissions":        ["admin"],
+  "commands":           ["/wiki"],
+  "events":             ["message.created"],
+  "health_url":         "string (URL, optional)",
+  "admin_url":          "string (optional)",
+  "storage":            { "postgres": {}, "redis": {}, "opensearch": {} }
 }
 ```
 
@@ -73,10 +88,13 @@ Returns agent metadata used by core for registration, capability routing, and Op
 |---|---|---|
 | `name` | ✅ | Stable identifier. Changing it creates a new agent in registry |
 | `version` | ✅ | Must follow semver `MAJOR.MINOR.PATCH` |
-| `capabilities` | ✅ | May be `[]` if agent has no A2A tools |
-| `a2a_endpoint` | if capabilities ≠ [] | Full URL to A2A handler |
-| `health_url` | ❌ | Defaults to `http://<service-hostname>/health` |
-| `admin_url` | ❌ | Shown as link in core admin panel |
+| `url` | if skills ≠ [] | A2A Server endpoint URL (official A2A field). Legacy `a2a_endpoint` accepted |
+| `skills` | recommended | Array of `AgentSkill` objects or legacy string IDs |
+| `capabilities` | recommended | A2A protocol capabilities: `{ streaming, pushNotifications }` |
+| `provider` | optional | `{ organization }` — service provider info |
+| `health_url` | optional | Defaults to `http://<service-hostname>/health` |
+| `admin_url` | optional | Shown as link in core admin panel |
+| `skill_schemas` | deprecated | Fold input schemas into structured skills instead |
 
 ### Validation behavior in core:
 
@@ -105,7 +123,7 @@ Core uses this endpoint for liveness polling every 60 seconds.
 
 ## 4. A2A Endpoint
 
-**`POST /api/v1/a2a`** — REQUIRED if `capabilities` is non-empty.
+**`POST /api/v1/a2a`** — REQUIRED if `skills` is non-empty.
 
 Standard request envelope:
 
@@ -143,7 +161,7 @@ Core includes `AgentConventionVerifier` which checks all registered agents on de
 on every discovery cycle. It reports violations per-agent:
 
 ```
-VIOLATION [knowledge-agent]: a2a_endpoint missing but capabilities declared
+VIOLATION [knowledge-agent]: url (or a2a_endpoint) missing but skills declared
 VIOLATION [news-maker-agent]: version "1.0" does not match semver pattern
 ```
 
@@ -171,7 +189,7 @@ This state model is a contract for:
 1. Add service to `compose.yaml` with name ending `-agent` and label `ai.platform.agent=true`
 2. Implement `GET /api/v1/manifest` returning valid JSON
 3. Implement `GET /health` returning `{"status": "ok"}`
-4. If capabilities declared: implement `POST /api/v1/a2a`
+4. If skills declared: implement `POST /api/v1/a2a`
 5. Run `make conventions-test` — all checks must pass
 6. Core auto-discovers on next discovery cycle (up to 60s) or via "Run Discovery" in admin panel
 

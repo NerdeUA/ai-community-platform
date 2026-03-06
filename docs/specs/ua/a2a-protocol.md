@@ -12,10 +12,21 @@ A2A потрібен для того, щоб:
 - відповіді були уніфікованими незалежно від реалізації конкретного агента
 - clarification loop і multi-step orchestration працювали через один контракт
 
+## Ключова Термінологія
+
+| Платформний термін | Офіц. A2A термін | Опис |
+|---|---|---|
+| Agent Card | Agent Card | JSON-документ з метаданими агента: ідентичність, skills, endpoint |
+| Skills | AgentSkill | Іменовані здібності, які агент надає через A2A |
+| A2A Gateway | — | Подвійна роль Core: A2A Server (для OpenClaw) + A2A Client (для агентів) |
+| A2A Server | A2A Server | HTTP-обробник кожного агента для вхідних A2A запитів |
+| A2A Client | A2A Client | Роль OpenClaw — надсилає запити до A2A Gateway |
+| Skill Catalog | — | Агрегований список усіх skills з усіх увімкнених агентів |
+
 ## Базові Вимоги
 
 - A2A повинен бути уніфікованим протоколом для всіх агентних викликів
-- кожен агент повинен мати зрозумілу discovery-точку або registry-опис
+- кожен агент повинен надавати Agent Card через `GET /api/v1/manifest` з описом своїх skills
 - request і response повинні мати стабільну структуру
 - кореляція викликів повинна бути явною (`request_id`, `trace_id`, за потреби `conversation_id`)
 
@@ -79,8 +90,14 @@ A2A потрібен для того, щоб:
 
 Секрети (`token`, `authorization`, `api_key`, `secret`, `password`, `cookie`) повинні редагуватися до збереження в лог.
 
-## Out Of Scope Для MVP
+## План Розширення Async Взаємодії
 
-- складний streaming-протокол
+Streaming (SSE) та push-сповіщення зафіксовані як окремий OpenSpec change:
+`openspec/changes/add-a2a-streaming-and-push`.
+
+До завершення цієї зміни базовим режимом платформи залишається synchronous request/response з можливістю polling за статусом задачі.
+
+## Out Of Scope Для Поточного Релізу (R1)
+
 - міжкластерна федерація агентів
 - довільні несумісні agent-specific transport-моделі

@@ -47,6 +47,14 @@ Accepted for MVP planning
 - runtime має запускатися з мінімальними правами
 - platform data не повинні ставати `OpenClaw` source of truth
 
+## A2A Gateway Naming (2026-03)
+
+In A2A protocol terminology, `core` acts as an **A2A Gateway** — it is simultaneously an A2A Server (receiving requests from OpenClaw) and an A2A Client (forwarding requests to specialized agents). The `App\A2AGateway` namespace reflects this dual role.
+
+- **OpenClaw** = A2A Client (sends `tasks/send` to Core)
+- **Core** = A2A Gateway (routes, audits, observes)
+- **Agents** = A2A Servers (each exposes skills via Agent Card)
+
 ## Follow-Up
 
 - зафіксувати внутрішній контракт між `core-platform` і `core-agent`

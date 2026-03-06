@@ -13,7 +13,7 @@ This document outlines the architecture and implementation plan for making OpenC
    - Uses its LLM to understand intent based on its System Prompt.
    - Knows about available tools (specialized agents) by pulling them from the **Core** `Discovery API`.
    - Decides to use the `hello-world` agent tool to answer the user's specific request.
-4. **OpenClaw -> Core (A2A Bridge):** OpenClaw makes an HTTP call to the Core Platform's invocation endpoint (`/api/v1/agents/invoke`) specifying the target `hello-world` and passing the context/arguments.
+4. **OpenClaw -> Core (A2A Bridge):** OpenClaw makes an HTTP call to the Core Platform's A2A Gateway endpoint (`/api/v1/a2a/send-message`) specifying the target `hello-world` and passing the context/arguments.
 5. **Core -> Hello-World Agent:** Core validates the request and routes it to the `hello-world` agent's A2A endpoint.
 6. **Hello-World Agent:** Processes the request natively (using its own logic/prompt) and returns a response.
 7. **Response Chain:** The response travels back from Hello-World -> Core -> OpenClaw.
@@ -47,12 +47,12 @@ Locally, exposing a webhook is difficult due to NAT/firewalls. OpenClaw supports
 
 1. **User Input:** "Hey bot, what do you want to say to this world?"
 2. **Tool Discovery:**
-   - OpenClaw periodically (or dynamically) fetches tools from Core (`GET /api/v1/agents/discovery`).
+   - OpenClaw periodically (or dynamically) fetches tools from Core (`GET /api/v1/a2a/discovery`).
    - It sees: `{"name": "hello-world", "description": "Responds with a greeting to the world."}`
 3. **LLM Decision:** OpenClaw's central LLM recognizes the user is asking for the bot's message to the world, mapping perfectly to the `hello-world` tool.
 4. **Tool Execution:** OpenClaw calls the Core:
    ```json
-   POST /api/v1/agents/invoke
+   POST /api/v1/a2a/send-message
    {
        "agent": "hello-world",
        "action": "run",

@@ -53,6 +53,10 @@ Welcome to the Neuron AI documentation! This index provides a quick overview and
 - [Middleware](workflow-middleware.md) - Intercepting workflow nodes.
 - [Examples](workflow-examples.md) - Real-world implementations.
 
+## 💡 Examples
+
+- [Neuron AI Examples](examples/index.md) - Reference projects: orchestration, A2A agents, async, tool usage, and more.
+
 ## 🛠 Resources
 
 - [Testing](testing.md) - Mocking and assertions.

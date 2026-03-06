@@ -1,0 +1,25 @@
+framework:
+  messenger:
+    default_bus: messenger.bus.default
+    transports:
+      openclaw_inbound:
+        dsn: '%env(MESSENGER_TRANSPORT_DSN)%/openclaw_inbound'
+        retry_strategy:
+          max_retries: 3
+          delay: 500
+          multiplier: 2
+      agent_invoke:
+        dsn: '%env(MESSENGER_TRANSPORT_DSN)%/agent_invoke'
+        retry_strategy:
+          max_retries: 2
+          delay: 1000
+      telegram_outbound:
+        dsn: '%env(MESSENGER_TRANSPORT_DSN)%/telegram_outbound'
+        retry_strategy:
+          max_retries: 5
+          delay: 300
+          multiplier: 2
+    routing:
+      App\Message\OpenClawInboundMessage: openclaw_inbound
+      App\Message\AgentInvokeMessage: agent_invoke
+      App\Message\TelegramOutboundMessage: telegram_outbound

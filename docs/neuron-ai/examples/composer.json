@@ -1,0 +1,41 @@
+{
+    "name": "ai-community/neuron-ai-examples",
+    "description": "Neuron AI example projects for local study. Run `composer install` to fetch all examples.",
+    "type": "project",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/neuron-core/laravel-travel-agent"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/neuron-core/youtube-ai-agent"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/neuron-core/travel-planner-agent"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/neuron-core/deep-research-agent"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "neuron-core/neuron-ai": "^2.0",
+        "neuron-core/a2a": "dev-main",
+        "neuron-core/laravel-travel-agent": "dev-main",
+        "neuron-core/youtube-ai-agent": "dev-main",
+        "neuron-core/travel-planner-agent": "dev-main",
+        "neuron-core/deep-research-agent": "dev-main"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}

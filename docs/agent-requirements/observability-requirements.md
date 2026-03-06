@@ -7,7 +7,7 @@ This document defines the minimum observability contract for all agents and orch
 These requirements apply to:
 
 - `OpenClaw` (entrypoint orchestrator)
-- `core` (routing and A2A bridge)
+- `core` (A2A Gateway — routing and bridging)
 - all specialized agents exposing A2A endpoints
 
 ## 2. Required Trace Context Propagation
