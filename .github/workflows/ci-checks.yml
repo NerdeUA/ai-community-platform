@@ -1,0 +1,69 @@
+name: CI Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compose-validate:
+    name: Validate Compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate merged compose config
+        run: |
+          docker compose \
+            -f compose.yaml \
+            -f compose.core.yaml \
+            -f compose.agent-hello.yaml \
+            -f compose.agent-knowledge.yaml \
+            -f compose.agent-news-maker.yaml \
+            -f compose.langfuse.yaml \
+            -f compose.openclaw.yaml \
+            config >/dev/null
+
+  detect-components:
+    name: Detect Changed Components
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List changed files
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="${{ github.sha }}~1"
+            HEAD="${{ github.sha }}"
+          fi
+
+          echo "Comparing $BASE..$HEAD"
+          git diff --name-only "$BASE" "$HEAD" | sed 's/^/- /'
+
+  build-core-and-agents:
+    name: Build Core + Agents Only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build core and agent images only
+        run: |
+          docker compose \
+            -f compose.yaml \
+            -f compose.core.yaml \
+            -f compose.agent-hello.yaml \
+            -f compose.agent-knowledge.yaml \
+            -f compose.agent-news-maker.yaml \
+            build \
+            core \
+            hello-agent \
+            knowledge-agent \
+            knowledge-worker \
+            news-maker-agent
