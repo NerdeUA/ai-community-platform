@@ -8,16 +8,20 @@ services:
     labels:
       - traefik.enable=true
 
+      # Core service port
+      - traefik.http.services.core.loadbalancer.server.port=80
+
+      # PUBLIC SITE
       - traefik.http.routers.core-public.rule=Host(`ai-community-platform.org`) || Host(`www.ai-community-platform.org`) || Host(`localhost`)
       - traefik.http.routers.core-public.entrypoints=web
       - traefik.http.routers.core-public.service=core
 
+      # ADMIN SITE
       - traefik.http.routers.core-admin.rule=Host(`admin.ai-community-platform.org`)
       - traefik.http.routers.core-admin.entrypoints=web
       - traefik.http.routers.core-admin.service=core
 
-      - traefik.http.services.core.loadbalancer.server.port=80
-
+      # Optional auth middleware (keep if you actually use it)
       - traefik.http.middlewares.edge-auth.forwardauth.address=http://core/edge/auth/verify
       - traefik.http.middlewares.edge-auth.forwardauth.trustForwardHeader=true
     environment:
