@@ -40,6 +40,24 @@ Dev Reporter Agent отримує результати виконання пай
 
 `status` має бути `"completed"` або `"failed"`. `task` — обов'язкове поле.
 
+### Відповідь `devreporter.status`
+
+```json
+{
+  "status": "completed",
+  "result": {
+    "runs": [...],
+    "stats": {
+      "total": 42,
+      "passed": 38,
+      "failed": 4,
+      "pass_rate": 90.5,
+      "avg_duration": 1800.0
+    }
+  }
+}
+```
+
 ## База даних
 
 Таблиця: `pipeline_runs`

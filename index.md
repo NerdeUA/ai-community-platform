@@ -20,6 +20,7 @@ Agent-facing memory index for `AI Community Platform`. Always load this file fir
 ## Agent PRDs
 
 - `docs/agents/en/hello-agent.md` — Hello Agent
+- `docs/agents/en/dev-reporter-agent.md` — Dev Reporter Agent: pipeline run ingestion, Telegram notifications, admin panel
 - `docs/agents/en/knowledge-extractor-prd.md` — PRD for Community Wiki / Knowledge Extractor
 - `docs/agents/en/locations-catalog-prd.md` — PRD for the locations, services, and trusted contacts catalog
 - `docs/agents/en/news-digest-prd.md` — PRD for News Digest
