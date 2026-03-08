@@ -1,15 +1,48 @@
 """APScheduler setup for crawl and cleanup jobs."""
 import logging
+import threading
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.database import SessionLocal
-from app.models.models import AgentSettings
+from app.models.models import AgentSettings, SchedulerRun
 
 logger = logging.getLogger(__name__)
 
 _scheduler: BackgroundScheduler | None = None
+_crawl_pipeline_lock = threading.Lock()
+
+
+def recover_interrupted_runs() -> int:
+    """Mark stale running scheduler runs as failed after service restarts."""
+    db = SessionLocal()
+    try:
+        stale_runs = (
+            db.query(SchedulerRun)
+            .filter(SchedulerRun.status == "running", SchedulerRun.finished_at.is_(None))
+            .all()
+        )
+        if not stale_runs:
+            return 0
+
+        finished_at = datetime.now(timezone.utc)
+        message = "Interrupted by service restart before completion"
+        for run in stale_runs:
+            run.status = "failed"
+            run.finished_at = finished_at
+            run.error_message = f"{run.error_message}; {message}" if run.error_message else message
+
+        db.commit()
+        logger.warning("Recovered %d interrupted scheduler runs", len(stale_runs))
+        return len(stale_runs)
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to recover interrupted scheduler runs")
+        return 0
+    finally:
+        db.close()
 
 
 def _run_crawl_pipeline() -> None:
@@ -17,16 +50,23 @@ def _run_crawl_pipeline() -> None:
     from app.services.ranker import run_ranking
     from app.services.rewriter import run_rewriting
 
+    if not _crawl_pipeline_lock.acquire(blocking=False):
+        logger.warning("Skipping crawl pipeline: another crawl pipeline run is in progress")
+        return
+
     logger.info("Starting crawl pipeline")
-    crawled_items = run_crawl()
-    ranked_items = run_ranking()
-    rewritten_items = run_rewriting()
-    logger.info(
-        "Crawl pipeline finished: crawled=%d ranked_selected=%d rewritten_ready=%d",
-        crawled_items,
-        ranked_items,
-        rewritten_items,
-    )
+    try:
+        crawled_items = run_crawl()
+        ranked_items = run_ranking()
+        rewritten_items = run_rewriting()
+        logger.info(
+            "Crawl pipeline finished: crawled=%d ranked_selected=%d rewritten_ready=%d",
+            crawled_items,
+            ranked_items,
+            rewritten_items,
+        )
+    finally:
+        _crawl_pipeline_lock.release()
 
 
 def _run_cleanup() -> None:
@@ -45,6 +85,8 @@ def _get_settings() -> AgentSettings | None:
 
 def start_scheduler() -> None:
     global _scheduler
+
+    recover_interrupted_runs()
 
     agent_settings = _get_settings()
     crawl_cron = agent_settings.crawl_cron if agent_settings else "0 */4 * * *"
@@ -74,11 +116,15 @@ def stop_scheduler() -> None:
         logger.info("Scheduler stopped")
 
 
-def trigger_crawl_now() -> None:
+def trigger_crawl_now() -> bool:
     """Manually trigger crawl pipeline immediately."""
-    import threading
+    if _crawl_pipeline_lock.locked():
+        logger.warning("Manual crawl trigger ignored: crawl pipeline is already running")
+        return False
+
     threading.Thread(target=_run_crawl_pipeline, daemon=True, name="news-crawl-manual").start()
     logger.info("Manual crawl trigger accepted")
+    return True
 
 
 def trigger_cleanup_now() -> None:

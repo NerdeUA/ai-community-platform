@@ -65,7 +65,9 @@ def update_settings(
 def trigger_crawl():
     from app.services.scheduler import trigger_crawl_now
     logger.info("Received manual crawl trigger from admin")
-    trigger_crawl_now()
+    accepted = trigger_crawl_now()
+    if not accepted:
+        logger.warning("Manual crawl trigger skipped: crawl pipeline is already running")
     return RedirectResponse("/admin/settings", status_code=303)
 
 

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     opensearch_url: str = "http://opensearch:9200"
     admin_public_url: str = "http://localhost:8084/admin/sources"
     enable_test_endpoints: bool = False
+    crawl_max_links_per_source: int = 20
+    crawl_source_timebox_seconds: int = 120
+    crawl_run_timebox_seconds: int = 900
 
     model_config = {"env_file": ".env"}
 

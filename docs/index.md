@@ -7,6 +7,7 @@
 | [hello-agent](../apps/hello-agent/) | PHP 8.5 / Symfony 7 | Active | `/api/v1/manifest` | [EN](agents/en/hello-agent.md) · [UA](agents/ua/hello-agent.md) |
 | [knowledge-agent](../apps/knowledge-agent/) | PHP 8.5 / Symfony 7 | Active | `/api/v1/manifest` | — |
 | [news-maker-agent](../apps/news-maker-agent/) | Python / FastAPI | Active | `/api/v1/manifest` | — |
+| [dev-reporter-agent](../apps/dev-reporter-agent/) | PHP 8.5 / Symfony 7 | Active | `/api/v1/manifest` | [EN](agents/en/dev-reporter-agent.md) · [UA](agents/ua/dev-reporter-agent.md) |
 
 ## Planned Agents (PRD only)
 

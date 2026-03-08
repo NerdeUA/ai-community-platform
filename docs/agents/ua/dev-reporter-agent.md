@@ -83,8 +83,33 @@ Dev Reporter Agent отримує результати виконання пай
 - Apache (Docker)
 - Traefik routing на порті **8087**
 
+## Автентифікація
+
+A2A-ендпоінт захищений заголовком `X-Platform-Internal-Token`. Без валідного токена запит отримує `401 Unauthorized`.
+
+```bash
+curl -X POST http://localhost:8087/api/v1/a2a \
+  -H "Content-Type: application/json" \
+  -H "X-Platform-Internal-Token: ${APP_INTERNAL_TOKEN}" \
+  -d '{"intent": "devreporter.status", "payload": {}}'
+```
+
+Токен задається через змінну середовища `APP_INTERNAL_TOKEN`.
+
+## Валідація вхідних даних
+
+| Поле | Правило |
+|------|---------|
+| `task` | Обов'язкове для `ingest` |
+| `status` | Обов'язкове для `ingest`, допустимі значення: `completed`, `failed` |
+| `limit` | Діапазон 1–100, за замовчуванням 10 |
+| `days` | Мінімум 1 |
+| `status_filter` | Допустимі значення: `completed`, `failed` (інші ігноруються) |
+
 ## Telegram-сповіщення
 При `devreporter.ingest` агент формує повідомлення та відправляє його на A2A-ендпоінт Core (`openclaw.send_message`). Це best-effort, неблокуюча операція — якщо Core недоступний, логується попередження, а ingest все одно завершується успішно.
+
+Всі значення, що контролюються користувачем (task, branch, agent name), екрануються через `htmlspecialchars()` перед вставкою в HTML-повідомлення.
 
 ## Makefile команди
 - `make dev-reporter-setup` — збірка контейнера та встановлення залежностей

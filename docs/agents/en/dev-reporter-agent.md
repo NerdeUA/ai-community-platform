@@ -83,8 +83,33 @@ Indexes: `idx_pipeline_runs_status`, `idx_pipeline_runs_created_at`
 - Apache (Docker)
 - Traefik routing on port **8087**
 
+## Authentication
+
+The A2A endpoint is protected by the `X-Platform-Internal-Token` header. Requests without a valid token receive `401 Unauthorized`.
+
+```bash
+curl -X POST http://localhost:8087/api/v1/a2a \
+  -H "Content-Type: application/json" \
+  -H "X-Platform-Internal-Token: ${APP_INTERNAL_TOKEN}" \
+  -d '{"intent": "devreporter.status", "payload": {}}'
+```
+
+The token is set via the `APP_INTERNAL_TOKEN` environment variable.
+
+## Input Validation
+
+| Field | Rule |
+|-------|------|
+| `task` | Required for `ingest` |
+| `status` | Required for `ingest`, allowed values: `completed`, `failed` |
+| `limit` | Range 1–100, default 10 |
+| `days` | Minimum 1 |
+| `status_filter` | Allowed values: `completed`, `failed` (others ignored) |
+
 ## Telegram Notifications
 On `devreporter.ingest`, the agent formats a message and dispatches it to Core's A2A endpoint (`openclaw.send_message`). This is best-effort and non-blocking — if Core is unreachable, a warning is logged and the ingest still succeeds.
+
+All user-controlled values (task, branch, agent name) are escaped via `htmlspecialchars()` before embedding in HTML messages.
 
 ## Makefile Commands
 - `make dev-reporter-setup` — build container and install dependencies

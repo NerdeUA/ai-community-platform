@@ -60,26 +60,28 @@ CHEAP_MODELS="${PIPELINE_CHEAP_MODELS:-openrouter/deepseek-v3.2,openrouter/gemin
 FREE_MODELS="${PIPELINE_FREE_MODELS:-opencode/big-pickle,opencode/gpt-5-nano,opencode/minimax-m2.5-free}"
 
 # Fallback model chains (override via env: PIPELINE_FALLBACK_ARCHITECT="model1,model2")
-# Tiers: primary → paid fallback → cheap ($0.25-0.40/1M) → free
-# Use "free" as shorthand for the entire free models chain
-FALLBACK_ARCHITECT="${PIPELINE_FALLBACK_ARCHITECT:-anthropic/claude-sonnet-4-6,openai/gpt-5.3-codex,cheap,free}"
-FALLBACK_CODER="${PIPELINE_FALLBACK_CODER:-openai/gpt-5.3-codex,anthropic/claude-opus-4-6,cheap,free}"
-FALLBACK_VALIDATOR="${PIPELINE_FALLBACK_VALIDATOR:-anthropic/claude-sonnet-4-6,openai/codex-mini-latest,cheap,free}"
-FALLBACK_TESTER="${PIPELINE_FALLBACK_TESTER:-anthropic/claude-sonnet-4-6,openai/codex-mini-latest,cheap,free}"
-FALLBACK_DOCUMENTER="${PIPELINE_FALLBACK_DOCUMENTER:-anthropic/claude-opus-4-6,cheap,free}"
-FALLBACK_AUDITOR="${PIPELINE_FALLBACK_AUDITOR:-anthropic/claude-sonnet-4-6,cheap,free}"
+# Tiers: subscriptions (Claude+Codex) → free (OpenRouter) → cheap (paid per-token)
+# Subscriptions already paid (flat rate), free costs nothing, cheap is last resort
+FALLBACK_ARCHITECT="${PIPELINE_FALLBACK_ARCHITECT:-anthropic/claude-sonnet-4-6,openai/gpt-5.3-codex,free,cheap}"
+FALLBACK_CODER="${PIPELINE_FALLBACK_CODER:-openai/gpt-5.3-codex,anthropic/claude-opus-4-6,free,cheap}"
+FALLBACK_VALIDATOR="${PIPELINE_FALLBACK_VALIDATOR:-anthropic/claude-sonnet-4-6,openai/codex-mini-latest,free,cheap}"
+FALLBACK_TESTER="${PIPELINE_FALLBACK_TESTER:-anthropic/claude-sonnet-4-6,openai/codex-mini-latest,free,cheap}"
+FALLBACK_DOCUMENTER="${PIPELINE_FALLBACK_DOCUMENTER:-anthropic/claude-opus-4-6,free,cheap}"
+FALLBACK_AUDITOR="${PIPELINE_FALLBACK_AUDITOR:-anthropic/claude-sonnet-4-6,free,cheap}"
 
 # ── Help ──────────────────────────────────────────────────────────────
 
 show_help() {
   cat << 'HELP'
 Usage: ./scripts/pipeline.sh [options] "task description"
+       ./scripts/pipeline.sh [options] --task-file path/to/task.md
 
 Options:
   --skip-architect    Skip the architect stage (use existing spec)
   --from <agent>      Start from a specific agent
   --only <agent>      Run only a specific agent
   --branch <name>     Use specific branch name (default: auto-generated)
+  --task-file <path>  Read task prompt from a file instead of CLI argument
   --audit             Add auditor as 6th quality gate agent
   --webhook <url>     POST JSON summary to webhook on completion/failure
   --telegram          Send status updates via Telegram bot
@@ -102,12 +104,12 @@ Telegram (env vars):
   PIPELINE_TELEGRAM_CHAT_ID      Chat/group ID to post to
 
 Fallback models (env vars, comma-separated):
-  Tiers: primary → paid → cheap (<$1/1M) → free
-  PIPELINE_FALLBACK_ARCHITECT    (default: sonnet,codex,cheap,free)
-  PIPELINE_FALLBACK_CODER        (default: codex,opus,cheap,free)
-  PIPELINE_FALLBACK_VALIDATOR    (default: sonnet,codex-mini,cheap,free)
-  PIPELINE_FALLBACK_TESTER       (default: sonnet,codex-mini,cheap,free)
-  PIPELINE_FALLBACK_DOCUMENTER   (default: opus,cheap,free)
+  Tiers: subscriptions (Claude+Codex) → free → cheap (per-token)
+  PIPELINE_FALLBACK_ARCHITECT    (default: sonnet,codex,free,cheap)
+  PIPELINE_FALLBACK_CODER        (default: codex,opus,free,cheap)
+  PIPELINE_FALLBACK_VALIDATOR    (default: sonnet,codex-mini,free,cheap)
+  PIPELINE_FALLBACK_TESTER       (default: sonnet,codex-mini,free,cheap)
+  PIPELINE_FALLBACK_DOCUMENTER   (default: opus,free,cheap)
   PIPELINE_CHEAP_MODELS          (default: deepseek-v3.2,gemini-3.1-flash-lite)
   PIPELINE_FREE_MODELS           (default: big-pickle,gpt-5-nano,minimax-m2.5-free)
 
@@ -126,6 +128,7 @@ FROM_AGENT=""
 ONLY_AGENT=""
 BRANCH_NAME=""
 TASK_MESSAGE=""
+TASK_FILE=""
 WEBHOOK_URL=""
 ENABLE_AUDIT=false
 NO_COMMIT=false
@@ -159,6 +162,10 @@ while [[ $# -gt 0 ]]; do
       ENABLE_AUDIT=true
       shift
       ;;
+    --task-file)
+      TASK_FILE="$2"
+      shift 2
+      ;;
     --no-commit)
       NO_COMMIT=true
       shift
@@ -177,6 +184,15 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Load task from file if --task-file was specified
+if [[ -n "$TASK_FILE" ]]; then
+  if [[ ! -f "$TASK_FILE" ]]; then
+    echo -e "${RED}Error: Task file not found: ${TASK_FILE}${NC}"
+    exit 1
+  fi
+  TASK_MESSAGE=$(cat "$TASK_FILE")
+fi
 
 if [[ -z "$TASK_MESSAGE" ]]; then
   show_help

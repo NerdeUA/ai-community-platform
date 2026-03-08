@@ -143,16 +143,57 @@ Run this check after any operation:
 <1-2 sentences>
 
 ## Функціонал / Features
-- <bullet list>
+- <bullet list of endpoints: POST /api/v1/a2a, GET /health, GET /api/v1/manifest, admin pages>
+
+## Скіли / Skills
+| Skill ID | Опис / Description | Ключові вхідні дані / Key Inputs |
+|---|---|---|
+| `agent.skill_name` | <what it does> | `field1`, `field2` |
+
+<For each skill with non-trivial input, add a ### subsection with example JSON payload>
+
+## База даних / Database
+<Table name, columns with types, indexes. Use a markdown table>
 
 ## Технічний стек / Tech Stack
-- <stack details>
+- <language, framework, DB, routing port>
 
-## Конфігурація / Configuration
-<admin fields, storage details>
+## Автентифікація / Authentication
+<Auth mechanism (e.g., X-Platform-Internal-Token header), curl example>
+
+## Валідація вхідних даних / Input Validation
+| Поле / Field | Правило / Rule |
+|---|---|
+| `field` | <required, range, allowlist, default> |
+
+## Telegram-сповіщення / Notifications
+<If agent sends notifications: mechanism, format, error handling>
 
 ## Makefile команди / Makefile Commands
-- <make targets>
+- <make targets for setup, test, analyse, cs-check, migrate>
+
+## Адмін-панель / Admin Panel
+<URL, what it shows, filters>
+```
+
+Sections are ordered from "what it does" to "how to run it". Include only sections relevant to the agent — skip empty ones (e.g., skip Database if no DB, skip Notifications if none).
+
+### Feature Documentation
+
+```markdown
+# <Feature Name>
+
+## Огляд / Overview
+<What it does, architecture>
+
+## Швидкий старт / Quick Start
+<Minimal steps to use the feature>
+
+## Конфігурація / Configuration
+<Env vars, config files, options table>
+
+## Приклади / Examples
+<Real usage examples with code blocks>
 ```
 
 ### Specification Documentation
