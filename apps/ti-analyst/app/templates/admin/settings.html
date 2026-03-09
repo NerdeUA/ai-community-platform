@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+
+<div class="card">
+  <h2>Telegram Notifications</h2>
+
+  <div style="display:grid;grid-template-columns:auto 1fr;gap:0.4rem 1rem;font-size:0.875rem;margin-bottom:1rem;align-items:center;">
+    <span style="color:#64748b;">Bot token</span>
+    <span>
+      {% if tg_token_set %}
+        <span class="badge badge-ok">configured</span>
+      {% else %}
+        <span class="badge badge-critical">not set</span>
+        <span style="color:#64748b;margin-left:0.5rem;font-size:0.8rem;">Set <code>TELEGRAM_BOT_TOKEN</code> in <code>.env.local</code></span>
+      {% endif %}
+    </span>
+  </div>
+
+  <form action="/admin/settings/update" method="post" id="tgChatForm"
+        style="display:grid;grid-template-columns:1fr auto auto;gap:0.5rem;align-items:end;margin-bottom:1rem;">
+    {# Hidden fields to carry over all other settings unchanged #}
+    <input type="hidden" name="triage_model" value="{{ settings.triage_model }}">
+    <input type="hidden" name="analyst_model" value="{{ settings.analyst_model }}">
+    <input type="hidden" name="infra_model" value="{{ settings.infra_model }}">
+    <input type="hidden" name="infra_model" value="{{ settings.infra_model }}">
+    <input type="hidden" name="ingestion_cron" value="{{ settings.ingestion_cron }}">
+    <input type="hidden" name="triage_prompt" value="{{ settings.triage_prompt }}">
+    <input type="hidden" name="analyst_prompt" value="{{ settings.analyst_prompt }}">
+    <input type="hidden" name="infra_prompt" value="{{ settings.infra_prompt }}">
+    <input type="hidden" name="publisher_ops_prompt" value="{{ settings.publisher_ops_prompt }}">
+    <input type="hidden" name="publisher_exec_prompt" value="{{ settings.publisher_exec_prompt }}">
+    {% if settings.openclaw_enabled %}<input type="hidden" name="openclaw_enabled" value="true">{% endif %}
+
+    <div class="form-group" style="margin-bottom:0;">
+      <label style="font-size:0.8rem;">Alert Chat ID
+        <span style="color:#475569;font-weight:400;">(куди надсилати сповіщення)</span>
+      </label>
+      <input name="telegram_alert_chat_id"
+             value="{{ tg_chat_id }}"
+             placeholder="-1001234567890 or personal ID"
+             style="font-family:monospace;">
+    </div>
+    <button class="btn btn-primary" type="submit" style="align-self:end;">Save</button>
+    <button class="btn btn-primary" id="tgTestBtn" type="button"
+            onclick="sendTgTest()" {% if not tg_token_set %}disabled{% endif %}
+            style="align-self:end;background:#1a3320;color:#86efac;">
+      Send Test
+    </button>
+  </form>
+
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <span id="tgTestResult" style="font-size:0.875rem;display:none;"></span>
+  </div>
+  <p style="color:#475569;font-size:0.78rem;margin-top:0.5rem;margin-bottom:0;">
+    "Send Test" надсилає у вказаний чат останній аналізований звіт (або ping якщо загроз ще немає).
+    Щоб дізнатися свій chat ID — напишіть <code>/start</code> боту <a href="https://t.me/userinfobot" style="color:#38bdf8;">@userinfobot</a>.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Agent Configuration</h2>
+  <form action="/admin/settings/update" method="post">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div class="form-group"><label>Triage Model</label><input name="triage_model" value="{{ settings.triage_model }}" required></div>
+      <div class="form-group"><label>Analyst Model</label><input name="analyst_model" value="{{ settings.analyst_model }}" required></div>
+      <div class="form-group"><label>InfraGuard Model (local)</label><input name="infra_model" value="{{ settings.infra_model }}" required></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div class="form-group"><label>Ingestion Cron</label><input name="ingestion_cron" value="{{ settings.ingestion_cron }}" required></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:0.5rem;margin-top:1.2rem;">
+        <input type="checkbox" name="openclaw_enabled" id="openclaw_enabled" value="true" {% if settings.openclaw_enabled %}checked{% endif %} style="width:auto;">
+        <label for="openclaw_enabled" style="margin:0;">Enable OpenClaw deep research</label>
+      </div>
+    </div>
+    <hr style="border-color:#2d3748;margin:1rem 0;">
+    <div class="form-group"><label>Triage (Ingestor) Prompt</label><textarea name="triage_prompt" rows="4">{{ settings.triage_prompt }}</textarea></div>
+    <div class="form-group"><label>Analyst Prompt</label><textarea name="analyst_prompt" rows="4">{{ settings.analyst_prompt }}</textarea></div>
+    <div class="form-group"><label>InfraGuard Prompt</label><textarea name="infra_prompt" rows="4">{{ settings.infra_prompt }}</textarea></div>
+    <div class="form-group"><label>Publisher — Operations Report Prompt</label><textarea name="publisher_ops_prompt" rows="4">{{ settings.publisher_ops_prompt }}</textarea></div>
+    <div class="form-group"><label>Publisher — Executive Summary Prompt</label><textarea name="publisher_exec_prompt" rows="4">{{ settings.publisher_exec_prompt }}</textarea></div>
+    <button class="btn btn-primary" type="submit">Save Settings</button>
+  </form>
+</div>
+
+<script>
+function sendTgTest() {
+  var btn = document.getElementById('tgTestBtn');
+  var res = document.getElementById('tgTestResult');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  res.style.display = 'none';
+
+  fetch('/admin/settings/test-telegram', { method: 'POST' })
+    .then(function(r) { return r.json().then(function(b) { return { ok: r.ok, body: b }; }); })
+    .then(function(resp) {
+      btn.disabled = false;
+      btn.textContent = 'Send Test Report';
+      res.style.display = 'inline';
+      if (resp.body.ok) {
+        res.style.color = '#86efac';
+        res.textContent = '✓ ' + (resp.body.note || 'Sent');
+      } else {
+        res.style.color = '#fca5a5';
+        res.textContent = '✗ ' + (resp.body.error || 'Error');
+      }
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      btn.textContent = 'Send Test Report';
+      res.style.display = 'inline';
+      res.style.color = '#fca5a5';
+      res.textContent = '✗ Network error';
+    });
+}
+</script>
+{% endblock %}

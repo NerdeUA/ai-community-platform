@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}TI Analyst{% endblock %} — Sentinel-AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+    nav { background: #1a1d27; border-bottom: 1px solid #2d3748; padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+    nav .brand { font-weight: 700; color: #f97316; font-size: 1.1rem; text-decoration: none; }
+    nav a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    nav a:hover, nav a.active { color: #f97316; background: rgba(249,115,22,0.1); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    .card { background: #1a1d27; border: 1px solid #2d3748; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
+    .card h2 { font-size: 1rem; font-weight: 600; color: #94a3b8; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.5rem 0.75rem; color: #64748b; font-weight: 500; border-bottom: 1px solid #2d3748; }
+    td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e2330; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+    .badge-critical { background: #7f1d1d; color: #fca5a5; }
+    .badge-high { background: #431407; color: #fb923c; }
+    .badge-medium { background: #422006; color: #fbbf24; }
+    .badge-low { background: #052e16; color: #86efac; }
+    .badge-ok { background: #052e16; color: #86efac; }
+    .badge-gray { background: #1e293b; color: #94a3b8; }
+    btn, .btn { display: inline-block; padding: 0.375rem 0.875rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: #f97316; color: #fff; }
+    .btn-primary:hover { background: #ea6c0d; }
+    .btn-danger { background: #7f1d1d; color: #fca5a5; }
+    .btn-danger:hover { background: #991b1b; }
+    .btn-sm { padding: 0.2rem 0.5rem; font-size: 0.75rem; }
+    form input, form select, form textarea { background: #0f1117; border: 1px solid #2d3748; color: #e2e8f0; padding: 0.375rem 0.625rem; border-radius: 6px; font-size: 0.875rem; width: 100%; }
+    form label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem; }
+    .form-group { margin-bottom: 0.75rem; }
+    .error { color: #fca5a5; background: #7f1d1d; padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.875rem; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: #1a1d27; border: 1px solid #2d3748; border-radius: 8px; padding: 1rem; text-align: center; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: #f97316; }
+    .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/web/dashboard" class="brand">Sentinel-AI</a>
+  <a href="/web/dashboard">Dashboard</a>
+  <a href="/admin/sources">Sources</a>
+  <a href="/admin/assets">Assets</a>
+  <a href="/admin/settings">Settings</a>
+  <a href="/api/v1/threats" style="margin-left:auto; font-size:0.8rem; color:#475569;">API</a>
+</nav>
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+</body>
+</html>

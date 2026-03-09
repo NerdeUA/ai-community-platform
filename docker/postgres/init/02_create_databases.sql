@@ -19,6 +19,12 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'dev_reporter_agent')\
 
 GRANT ALL PRIVILEGES ON DATABASE dev_reporter_agent TO dev_reporter_agent;
 
+-- TI Analyst Agent
+SELECT 'CREATE DATABASE ti_analyst OWNER ti_analyst'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'ti_analyst')\gexec
+
+GRANT ALL PRIVILEGES ON DATABASE ti_analyst TO ti_analyst;
+
 -- LiteLLM
 SELECT 'CREATE DATABASE litellm'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'litellm')\gexec

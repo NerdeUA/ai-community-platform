@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Assets{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Add Asset</h2>
+  <form action="/admin/assets/create" method="post" style="display:grid;grid-template-columns:repeat(5,1fr) auto;gap:0.5rem;align-items:end;">
+    <div class="form-group"><label>Name</label><input name="name" required placeholder="prod-nginx-01"></div>
+    <div class="form-group"><label>Vendor</label><input name="vendor" required placeholder="nginx"></div>
+    <div class="form-group"><label>Model/Product</label><input name="model" required placeholder="nginx"></div>
+    <div class="form-group"><label>SW Version</label><input name="software_version" placeholder="1.25.3"></div>
+    <div class="form-group"><label>Criticality</label><select name="criticality">{% for c in criticality_options %}<option>{{ c }}</option>{% endfor %}</select></div>
+    <button class="btn btn-primary" type="submit">Add</button>
+  </form>
+</div>
+<div class="card" style="margin-top:0.5rem;">
+  <h2 style="margin-bottom:0.5rem;">Import CSV</h2>
+  <p style="font-size:0.8rem;color:#64748b;margin-bottom:0.5rem;">Columns: name, vendor, model, software_version, criticality</p>
+  <form action="/admin/assets/import-csv" method="post" enctype="multipart/form-data" style="display:flex;gap:0.5rem;align-items:center;">
+    <input type="file" name="file" accept=".csv" style="width:auto;">
+    <button class="btn btn-primary" type="submit">Import</button>
+  </form>
+</div>
+<div class="card">
+  <h2>Asset Inventory ({{ assets|length }})</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Vendor</th><th>Model</th><th>Version</th><th>Criticality</th><th>Tags</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for a in assets %}
+    <tr>
+      <td>{{ a.name }}</td>
+      <td>{{ a.vendor }}</td>
+      <td>{{ a.model }}</td>
+      <td>{{ a.software_version or '—' }}</td>
+      <td><span class="badge badge-{{ a.criticality }}">{{ a.criticality }}</span></td>
+      <td style="color:#64748b;font-size:0.8rem;">{{ a.tags or '—' }}</td>
+      <td>
+        <form action="/admin/assets/{{ a.id }}/delete" method="post" style="display:inline;" onsubmit="return confirm('Delete?')">
+          <button class="btn btn-sm btn-danger">Del</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:#475569;padding:2rem;">No assets in inventory yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

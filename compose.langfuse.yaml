@@ -12,7 +12,7 @@ services:
       SALT: 7f74f72f8c2a4ed7a9935726ff6f9b31
       ENCRYPTION_KEY: 5f246ea22fb645e2892eea4b6f9dc7445f246ea22fb645e2892eea4b6f9dc744
       NEXTAUTH_SECRET: 8f2e7c58ea8449f1a70e1e6c5ea53dcf
-      NEXTAUTH_URL: http://localhost:8086
+      NEXTAUTH_URL: http://localhost/tools/langfuse
       TELEMETRY_ENABLED: "false"
       LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
       REDIS_CONNECTION_STRING: redis://langfuse-redis:6379
@@ -51,6 +51,16 @@ services:
       - traefik.http.routers.langfuse.entrypoints=langfuse
       - traefik.http.routers.langfuse.middlewares=edge-auth@docker
       - traefik.http.services.langfuse.loadbalancer.server.port=3000
+      - traefik.http.routers.langfuse-web.rule=PathPrefix(`/tools/langfuse`)
+      - traefik.http.routers.langfuse-web.entrypoints=web
+      - traefik.http.routers.langfuse-web.middlewares=edge-auth@docker,strip-tools-langfuse@docker
+      - traefik.http.routers.langfuse-web.service=langfuse
+      - traefik.http.middlewares.strip-tools-langfuse.stripprefix.prefixes=/tools/langfuse
+      # Next.js assets use root-relative paths (/_next/, /api/auth/, /icon.svg) — route them to langfuse too
+      - traefik.http.routers.langfuse-assets.rule=PathPrefix(`/_next/`) || PathPrefix(`/api/auth`) || Path(`/icon.svg`) || Path(`/favicon.ico`)
+      - traefik.http.routers.langfuse-assets.entrypoints=web
+      - traefik.http.routers.langfuse-assets.service=langfuse
+      - traefik.http.routers.langfuse-assets.priority=50
     networks:
       - dev-edge
 
@@ -67,7 +77,7 @@ services:
       SALT: 7f74f72f8c2a4ed7a9935726ff6f9b31
       ENCRYPTION_KEY: 5f246ea22fb645e2892eea4b6f9dc7445f246ea22fb645e2892eea4b6f9dc744
       NEXTAUTH_SECRET: 8f2e7c58ea8449f1a70e1e6c5ea53dcf
-      NEXTAUTH_URL: http://localhost:8086
+      NEXTAUTH_URL: http://localhost/tools/langfuse
       TELEMETRY_ENABLED: "false"
       LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
       REDIS_CONNECTION_STRING: redis://langfuse-redis:6379

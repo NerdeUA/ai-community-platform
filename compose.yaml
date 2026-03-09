@@ -5,6 +5,14 @@ services:
     image: traefik:v3.1
     command:
       - --configFile=/etc/traefik/traefik.yml
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=ai-community-platform_dev-edge
+      - traefik.http.routers.traefik-tools.rule=PathPrefix(`/tools/traefik`)
+      - traefik.http.routers.traefik-tools.entrypoints=web
+      - traefik.http.routers.traefik-tools.middlewares=edge-auth@docker,strip-tools-traefik@docker
+      - traefik.http.routers.traefik-tools.service=api@internal
+      - traefik.http.middlewares.strip-tools-traefik.stripprefix.prefixes=/tools/traefik
     ports:
       - "80:80"
       - "8080:8080"
@@ -15,6 +23,7 @@ services:
       - "8085:8085"
       - "8086:8086"
       - "8087:8087"
+      - "8088:8088"
     volumes:
       - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -94,6 +103,15 @@ services:
 
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=ai-community-platform_dev-edge
+      - traefik.http.routers.litellm-web.rule=PathPrefix(`/tools/litellm`)
+      - traefik.http.routers.litellm-web.entrypoints=web
+      - traefik.http.routers.litellm-web.middlewares=edge-auth@docker,strip-tools-litellm@docker
+      - traefik.http.routers.litellm-web.service=litellm-svc
+      - traefik.http.services.litellm-svc.loadbalancer.server.port=4000
+      - traefik.http.middlewares.strip-tools-litellm.stripprefix.prefixes=/tools/litellm
     env_file:
       - path: ./.env.local
         required: false

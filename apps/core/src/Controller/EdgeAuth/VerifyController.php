@@ -49,7 +49,8 @@ final class VerifyController extends AbstractController
 
     private function buildLoginUrl(string $requestedUrl): string
     {
-        $base = rtrim($this->loginBaseUrl, '/');
+        $parts = parse_url($requestedUrl);
+        $base = sprintf('%s://%s', $parts['scheme'] ?? 'http', $parts['host'] ?? 'localhost');
 
         return sprintf('%s/edge/auth/login?rd=%s', $base, urlencode($requestedUrl));
     }

@@ -10,7 +10,7 @@ E2E_COMPOSE ?= docker compose $(COMPOSE_FILES) --profile e2e
 E2E_CORE_DB ?= ai_community_platform_test
 E2E_BASE_URL ?= http://localhost:18080
 
-.PHONY: help bootstrap setup infra-setup core-setup knowledge-setup news-setup hello-setup dev-reporter-setup claw-setup \
+.PHONY: help bootstrap setup infra-setup core-setup knowledge-setup news-setup hello-setup dev-reporter-setup ti-analyst-setup claw-setup \
 	openclaw-frontdesk-sync \
         up up-observability down ps logs logs-traefik logs-core logs-litellm logs-openclaw logs-langfuse \
         agent-up agent-down \
@@ -20,6 +20,7 @@ E2E_BASE_URL ?= http://localhost:18080
         hello-install hello-test hello-analyse hello-cs-check hello-cs-fix \
         news-install news-migrate news-test news-analyse news-cs-check news-cs-fix \
         dev-reporter-install dev-reporter-migrate dev-reporter-test dev-reporter-analyse dev-reporter-cs-check dev-reporter-cs-fix \
+        ti-analyst-install ti-analyst-migrate ti-analyst-test ti-analyst-analyse ti-analyst-cs-check ti-analyst-cs-fix \
         agent-discover conventions-test \
         sync-skills pipeline pipeline-batch
 
@@ -83,7 +84,7 @@ bootstrap:
 openclaw-frontdesk-sync:
 	@./scripts/sync-openclaw-frontdesk.sh
 
-setup: infra-setup core-setup knowledge-setup hello-setup news-setup dev-reporter-setup claw-setup
+setup: infra-setup core-setup knowledge-setup hello-setup news-setup dev-reporter-setup ti-analyst-setup claw-setup
 	@echo "Local development dependencies are prepared."
 
 infra-setup:
@@ -112,6 +113,10 @@ dev-reporter-setup:
 news-setup:
 	$(COMPOSE) build news-maker-agent
 	$(COMPOSE) run --rm news-maker-agent pip install -r requirements.txt
+
+ti-analyst-setup:
+	$(COMPOSE) build ti-analyst-agent
+	$(COMPOSE) run --rm ti-analyst-agent pip install -r requirements.txt
 
 claw-setup:
 	mkdir -p .local/openclaw/state .local/openclaw/e2e-state
@@ -233,6 +238,24 @@ dev-reporter-migrate:
 
 news-migrate:
 	$(COMPOSE) exec news-maker-agent alembic upgrade head
+
+ti-analyst-install:
+	$(COMPOSE) run --rm ti-analyst-agent pip install -r requirements.txt
+
+ti-analyst-migrate:
+	$(COMPOSE) exec ti-analyst-agent alembic upgrade head
+
+ti-analyst-test:
+	$(COMPOSE) exec ti-analyst-agent python -m pytest tests/ -v
+
+ti-analyst-analyse:
+	$(COMPOSE) exec ti-analyst-agent ruff check app/ tests/
+
+ti-analyst-cs-check:
+	$(COMPOSE) exec ti-analyst-agent ruff format --check app/ tests/
+
+ti-analyst-cs-fix:
+	$(COMPOSE) exec ti-analyst-agent ruff format app/ tests/
 
 test:
 	$(COMPOSE) exec core ./vendor/bin/codecept run

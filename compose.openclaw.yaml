@@ -17,7 +17,7 @@ services:
     ports:
       - "18789:18789"
     command:
-      - cd /home/node/.openclaw/extensions/platform-tools && npm install --production 2>/dev/null; cd /home/node/.openclaw && openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true && exec openclaw gateway run --dev --allow-unconfigured --auth token --bind lan --port 18789 --token $$OPENCLAW_GATEWAY_TOKEN
+      - cd /home/node/.openclaw/extensions/platform-tools && npm install --production 2>/dev/null; cd /home/node/.openclaw && openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true && openclaw config set gateway.controlUi.allowInsecureAuth true && openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true && openclaw config set gateway.trustedProxies '["172.18.0.0/16","172.16.0.0/12","172.20.10.0/24"]' && openclaw config set gateway.controlUi.allowedOrigins '["http://localhost:18789","http://127.0.0.1:18789","http://172.20.10.71","http://172.20.10.71:18789"]' && openclaw config set gateway.auth.token $$OPENCLAW_GATEWAY_TOKEN && exec openclaw gateway run --dev --allow-unconfigured --auth token --bind lan --port 18789 --token $$OPENCLAW_GATEWAY_TOKEN
     labels:
       - traefik.enable=true
       - traefik.docker.network=ai-community-platform_dev-edge
@@ -30,6 +30,9 @@ services:
       - traefik.http.routers.openclaw-ui.middlewares=edge-auth@docker
       - traefik.http.routers.openclaw-ui.service=openclaw-ui
       - traefik.http.services.openclaw-ui.loadbalancer.server.port=18789
+      - traefik.http.routers.openclaw-web.rule=PathPrefix(`/tools/openclaw`)
+      - traefik.http.routers.openclaw-web.entrypoints=web
+      - traefik.http.routers.openclaw-web.service=openclaw-ui
     healthcheck:
       test:
         - CMD-SHELL

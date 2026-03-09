@@ -19,6 +19,8 @@ entryPoints:
     address: ":8086"
   dev-reporter:
     address: ":8087"
+  ti-analyst:
+    address: ":8088"
 
 providers:
   docker:

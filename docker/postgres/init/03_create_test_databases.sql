@@ -24,3 +24,9 @@ SELECT 'CREATE DATABASE dev_reporter_agent_test OWNER dev_reporter_agent'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'dev_reporter_agent_test')\gexec
 
 GRANT ALL PRIVILEGES ON DATABASE dev_reporter_agent_test TO dev_reporter_agent;
+
+-- TI Analyst Agent E2E
+SELECT 'CREATE DATABASE ti_analyst_test OWNER ti_analyst'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'ti_analyst_test')\gexec
+
+GRANT ALL PRIVILEGES ON DATABASE ti_analyst_test TO ti_analyst;

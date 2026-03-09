@@ -119,7 +119,7 @@ final class LoginController extends AbstractController
             return $default;
         }
 
-        if (!in_array($host, ['localhost', '127.0.0.1'], true)) {
+        if ('' === $host) {
             return $default;
         }
 

@@ -22,7 +22,15 @@
                     Сховище буде створено при увімкненні агента.
                 {% endif %}
                 {% if admin_url %}
-                    <a href="{{ admin_url }}" target="_blank">Налаштування агента &rarr;</a>
+                    <a id="agent-admin-link" data-url="{{ admin_url }}" href="{{ admin_url }}" target="_blank">Налаштування агента &rarr;</a>
+                    <script>
+                    (function () {
+                        var a = document.getElementById('agent-admin-link');
+                        a.href = a.getAttribute('data-url')
+                            .replace(/\/\/localhost(:\d+)?/, '//' + window.location.hostname + '$1')
+                            .replace(/\/\/127\.0\.0\.1(:\d+)?/, '//' + window.location.hostname + '$1');
+                    })();
+                    </script>
                 {% endif %}
             </p>
         </div>
@@ -100,15 +108,25 @@
 
     {# Agent admin iframe (if admin_url is available) #}
     {% if admin_url %}
-        {% set iframe_url = admin_url ~ ('?' in admin_url ? '&' : '?') ~ 'embedded=1' %}
         <div class="glass-card" style="padding:0;overflow:hidden;">
             <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--bg-card-border);">
                 <h2 style="margin:0;">Панель агента</h2>
             </div>
             <div class="iframe-container">
-                <iframe src="{{ iframe_url }}" title="Панель {{ agent_name }}"></iframe>
+                <iframe id="agent-admin-iframe"
+                        data-url="{{ admin_url ~ ('?' in admin_url ? '&' : '?') ~ 'embedded=1' }}"
+                        title="Панель {{ agent_name }}"></iframe>
             </div>
         </div>
+        <script>
+        (function () {
+            var iframe = document.getElementById('agent-admin-iframe');
+            var url = iframe.getAttribute('data-url')
+                .replace(/\/\/localhost(:\d+)?/, '//' + window.location.hostname + '$1')
+                .replace(/\/\/127\.0\.0\.1(:\d+)?/, '//' + window.location.hostname + '$1');
+            iframe.src = url;
+        })();
+        </script>
     {% endif %}
 {% endblock %}
 

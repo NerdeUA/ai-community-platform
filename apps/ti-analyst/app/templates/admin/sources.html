@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Sources{% endblock %}
+{% block content %}
+<style>
+  .tg-card { background: #0f1a12; border: 1px solid #166534; border-radius: 8px; padding: 1rem 1.25rem; margin-top: 0.75rem; }
+  .tg-card .tg-title { font-size: 1rem; font-weight: 600; color: #86efac; margin-bottom: 0.5rem; }
+  .tg-card .tg-meta { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; font-size: 0.85rem; }
+  .tg-card .tg-meta .k { color: #64748b; }
+  .tg-card .tg-meta .v { color: #e2e8f0; }
+  .tg-card .tg-desc { margin-top: 0.5rem; font-size: 0.825rem; color: #94a3b8; border-top: 1px solid #166534; padding-top: 0.5rem; white-space: pre-wrap; max-height: 80px; overflow: auto; }
+  .tg-card .tg-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; }
+  .btn-tg { background: #166534; color: #86efac; }
+  .btn-tg:hover { background: #15803d; }
+  .resolve-spinner { display:none; color:#94a3b8; font-size:0.85rem; }
+  .resolve-error { display:none; color:#fca5a5; font-size:0.85rem; margin-top:0.5rem; }
+  #tg-fields, #url-fields { transition: opacity 0.15s; }
+</style>
+
+<div class="card">
+  <h2>Add Intelligence Source</h2>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  <form id="sourceForm" action="/admin/sources/create" method="post">
+    {# --- Type selector + Name (always visible) --- #}
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.5rem;margin-bottom:0.75rem;">
+      <div class="form-group">
+        <label>Type</label>
+        <select name="source_type" id="sourceType" onchange="onTypeChange(this.value)">
+          {% for t in source_types %}<option>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Name</label>
+        <input name="name" id="sourceName" required placeholder="NVD RSS">
+      </div>
+    </div>
+
+    {# --- URL-based fields (rss / url / reddit) --- #}
+    <div id="url-fields">
+      <div style="display:grid;grid-template-columns:3fr 1fr auto;gap:0.5rem;align-items:end;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>URL</label>
+          <input name="url" id="urlInput" placeholder="https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Poll (min)</label>
+          <input name="poll_interval_minutes" id="urlPoll" type="number" value="60" min="10">
+        </div>
+        <button class="btn btn-primary" type="submit">Add</button>
+      </div>
+    </div>
+
+    {# --- Telegram-specific fields --- #}
+    <div id="tg-fields" style="display:none;">
+      {% if not tg_configured %}
+      <div class="error" style="margin-bottom:0.75rem;">
+        Bot token not configured. Set <code>TELEGRAM_BOT_TOKEN</code> environment variable.
+      </div>
+      {% endif %}
+
+      <div style="display:grid;grid-template-columns:3fr 1fr;gap:0.5rem;margin-bottom:0.5rem;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Channel (username, URL or ID)</label>
+          <input id="tgInput" placeholder="@durov  or  https://t.me/channel  or  -1001234567890"
+                 {% if not tg_configured %}disabled{% endif %}>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Poll (min)</label>
+          <input name="poll_interval_minutes" id="tgPoll" type="number" value="60" min="10" disabled>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.25rem;">
+        <button type="button" class="btn btn-tg" id="resolveBtn"
+                onclick="resolveChannel()" {% if not tg_configured %}disabled{% endif %}>
+          Resolve Channel
+        </button>
+        <span class="resolve-spinner" id="resolveSpinner">Resolving…</span>
+      </div>
+      <div class="resolve-error" id="resolveError"></div>
+
+      {# Confirmation card (hidden until resolve succeeds) #}
+      <div class="tg-card" id="tgCard" style="display:none;">
+        <div class="tg-title" id="tgCardTitle"></div>
+        <div class="tg-meta">
+          <span class="k">ID</span>       <span class="v" id="tgCardId"></span>
+          <span class="k">Username</span> <span class="v" id="tgCardUsername"></span>
+          <span class="k">Members</span>  <span class="v" id="tgCardMembers"></span>
+        </div>
+        <div class="tg-desc" id="tgCardDesc"></div>
+        <div class="tg-actions">
+          <button type="submit" class="btn btn-primary" id="tgConfirmBtn">Confirm &amp; Add</button>
+          <button type="button" class="btn" style="background:#1e293b;color:#94a3b8;" onclick="resetTgCard()">Cancel</button>
+          <span style="font-size:0.8rem;color:#475569;">Adding: <strong id="tgConfirmName"></strong></span>
+        </div>
+      </div>
+
+      {# Hidden fields sent on form submit for telegram type #}
+      <input type="hidden" name="telegram_id" id="hiddenTgId" value="0">
+      <input type="hidden" name="telegram_title" id="hiddenTgTitle">
+      <input type="hidden" name="telegram_username" id="hiddenTgUsername">
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Configured Sources ({{ sources|length }})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th><th>Type</th><th>Channel / URL</th><th>Poll</th>
+        <th>Status</th><th>Last Polled</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in sources %}
+    <tr id="row-{{ s.id }}">
+      <td>{{ s.name }}</td>
+      <td><span class="badge badge-gray">{{ s.source_type }}</span></td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        {% if s.source_type == 'telegram' %}
+          {% if s.telegram_username %}
+            <a href="https://t.me/{{ s.telegram_username }}" target="_blank" style="color:#38bdf8;">@{{ s.telegram_username }}</a>
+          {% endif %}
+          <span style="color:#475569;font-size:0.8rem;">&nbsp;(-100{{ s.telegram_id }})</span>
+        {% else %}
+          {{ s.url }}
+        {% endif %}
+      </td>
+      <td>{{ s.poll_interval_minutes }}m</td>
+      <td>{% if s.enabled %}<span class="badge badge-ok">enabled</span>{% else %}<span class="badge badge-gray">disabled</span>{% endif %}</td>
+      <td>{{ s.last_polled_at.strftime('%Y-%m-%d %H:%M') if s.last_polled_at else '—' }}</td>
+      <td style="display:flex;gap:0.25rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" style="background:#1e3a5f;color:#93c5fd;"
+                onclick="toggleEdit('{{ s.id }}')">Edit</button>
+        {% if s.enabled %}
+        <button class="btn btn-sm" style="background:#1a3320;color:#86efac;"
+                id="poll-btn-{{ s.id }}"
+                onclick="pollSource('{{ s.id }}', '{{ s.name|replace("'","\\'")|e }}')">Poll</button>
+        <span id="poll-result-{{ s.id }}" style="font-size:0.75rem;color:#94a3b8;align-self:center;display:none;"></span>
+        {% endif %}
+        <form action="/admin/sources/{{ s.id }}/toggle" method="post" style="display:inline;">
+          <button class="btn btn-sm" style="background:#1e293b;color:#94a3b8;">
+            {% if s.enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+        <form action="/admin/sources/{{ s.id }}/delete" method="post" style="display:inline;"
+              onsubmit="return confirm('Delete {{ s.name }}?')">
+          <button class="btn btn-sm btn-danger">Del</button>
+        </form>
+      </td>
+    </tr>
+    <tr id="edit-row-{{ s.id }}" style="display:none;background:#0f1928;">
+      <td colspan="7" style="padding:0.75rem 1rem;">
+        <form action="/admin/sources/{{ s.id }}/update" method="post"
+              style="display:grid;grid-template-columns:2fr {% if s.source_type != 'telegram' %}2fr {% endif %}1fr auto auto;gap:0.5rem;align-items:end;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:0.75rem;">Name</label>
+            <input name="name" value="{{ s.name }}" required style="padding:0.3rem 0.5rem;font-size:0.85rem;">
+          </div>
+          {% if s.source_type != 'telegram' %}
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:0.75rem;">URL</label>
+            <input name="url" value="{{ s.url or '' }}" style="padding:0.3rem 0.5rem;font-size:0.85rem;">
+          </div>
+          {% endif %}
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:0.75rem;">Poll (min)</label>
+            <input name="poll_interval_minutes" type="number" value="{{ s.poll_interval_minutes }}" min="10"
+                   style="padding:0.3rem 0.5rem;font-size:0.85rem;">
+          </div>
+          <button class="btn btn-sm btn-primary" type="submit" style="align-self:end;">Save</button>
+          <button class="btn btn-sm" type="button" style="background:#1e293b;color:#94a3b8;align-self:end;"
+                  onclick="toggleEdit('{{ s.id }}')">Cancel</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:#475569;padding:2rem;">No sources configured yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function onTypeChange(type) {
+  var isTg = type === 'telegram';
+  document.getElementById('url-fields').style.display = isTg ? 'none' : '';
+  document.getElementById('tg-fields').style.display  = isTg ? '' : 'none';
+
+  // Manage required/disabled to avoid validation issues
+  document.getElementById('urlInput').required = !isTg;
+  document.getElementById('urlPoll').disabled  = isTg;
+  document.getElementById('tgPoll').disabled   = !isTg;
+
+  resetTgCard();
+}
+
+function resetTgCard() {
+  document.getElementById('tgCard').style.display = 'none';
+  document.getElementById('tgInput').value = '';
+  document.getElementById('hiddenTgId').value = '0';
+  document.getElementById('hiddenTgTitle').value = '';
+  document.getElementById('hiddenTgUsername').value = '';
+  document.getElementById('resolveError').style.display = 'none';
+  document.getElementById('resolveBtn').disabled = false;
+}
+
+function resolveChannel() {
+  var input = document.getElementById('tgInput').value.trim();
+  if (!input) { alert('Enter a channel username, URL or ID first.'); return; }
+
+  var btn    = document.getElementById('resolveBtn');
+  var spin   = document.getElementById('resolveSpinner');
+  var errDiv = document.getElementById('resolveError');
+
+  btn.disabled = true;
+  spin.style.display = 'inline';
+  errDiv.style.display = 'none';
+  document.getElementById('tgCard').style.display = 'none';
+
+  fetch('/admin/sources/resolve-telegram', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel_input: input })
+  })
+  .then(function(r) { return r.json().then(function(b) { return { ok: r.ok, body: b }; }); })
+  .then(function(res) {
+    if (!res.ok || res.body.error) {
+      errDiv.textContent = res.body.error || 'Unknown error';
+      errDiv.style.display = 'block';
+      btn.disabled = false;
+      spin.style.display = 'none';
+      return;
+    }
+    var d = res.body;
+    // Populate confirmation card
+    document.getElementById('tgCardTitle').textContent    = d.title;
+    document.getElementById('tgCardId').textContent       = d.full_id;
+    document.getElementById('tgCardUsername').textContent = d.username ? '@' + d.username : '—';
+    document.getElementById('tgCardMembers').textContent  = d.member_count != null ? d.member_count.toLocaleString() : '—';
+    var desc = document.getElementById('tgCardDesc');
+    if (d.description) { desc.textContent = d.description; desc.style.display = ''; }
+    else { desc.style.display = 'none'; }
+    // Auto-fill name if blank
+    var nameInput = document.getElementById('sourceName');
+    if (!nameInput.value.trim()) { nameInput.value = d.title; }
+    // Set hidden fields
+    document.getElementById('hiddenTgId').value       = d.telegram_id;
+    document.getElementById('hiddenTgTitle').value    = d.title;
+    document.getElementById('hiddenTgUsername').value = d.username || '';
+    // Update confirm button label
+    document.getElementById('tgConfirmName').textContent = nameInput.value || d.title;
+    document.getElementById('tgCard').style.display = '';
+    spin.style.display = 'none';
+    // Leave btn disabled — user must either confirm or cancel
+  })
+  .catch(function(e) {
+    errDiv.textContent = 'Network error: ' + e.message;
+    errDiv.style.display = 'block';
+    btn.disabled = false;
+    spin.style.display = 'none';
+  });
+}
+
+// Keep confirm button label in sync with name input
+document.getElementById('sourceName').addEventListener('input', function() {
+  var tgId = document.getElementById('hiddenTgId').value;
+  if (tgId && tgId !== '0') {
+    document.getElementById('tgConfirmName').textContent = this.value;
+  }
+});
+
+function toggleEdit(id) {
+  var row = document.getElementById('edit-row-' + id);
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+function pollSource(id, name) {
+  var btn = document.getElementById('poll-btn-' + id);
+  var resultEl = document.getElementById('poll-result-' + id);
+  btn.disabled = true;
+  btn.textContent = '…';
+  resultEl.style.display = 'none';
+
+  fetch('/admin/sources/' + id + '/poll', { method: 'POST' })
+    .then(function(r) { return r.json().then(function(b) { return { ok: r.ok, body: b }; }); })
+    .then(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Poll';
+      resultEl.style.display = 'inline';
+      if (!res.ok || res.body.error) {
+        resultEl.style.color = '#fca5a5';
+        resultEl.textContent = res.body.error || 'Error';
+      } else {
+        resultEl.style.color = '#86efac';
+        resultEl.textContent = res.body.items_fetched + ' items, ' + res.body.threats_new + ' new';
+      }
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      btn.textContent = 'Poll';
+      resultEl.style.display = 'inline';
+      resultEl.style.color = '#fca5a5';
+      resultEl.textContent = 'Network error';
+    });
+}
+</script>
+{% endblock %}

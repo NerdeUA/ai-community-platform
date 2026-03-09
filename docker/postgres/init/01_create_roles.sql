@@ -14,5 +14,9 @@ BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'dev_reporter_agent') THEN
         CREATE ROLE dev_reporter_agent WITH LOGIN PASSWORD 'dev_reporter_agent';
     END IF;
+
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ti_analyst') THEN
+        CREATE ROLE ti_analyst WITH LOGIN PASSWORD 'ti_analyst';
+    END IF;
 END
 $$;

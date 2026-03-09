@@ -15,20 +15,10 @@ model_list:
     litellm_params:
       model: openrouter/deepseek/deepseek-v3.2
       api_key: os.environ/OPENROUTER_API_KEY
-  # Gemini 3.1 Flash Lite: $0.25 input / $1.50 output — 1M context, fastest
-  - model_name: cheap
-    litellm_params:
-      model: openrouter/google/gemini-3.1-flash-lite-preview
-      api_key: os.environ/OPENROUTER_API_KEY
-
   # Named aliases for direct access to cheap models
   - model_name: cheap/deepseek-v3.2
     litellm_params:
       model: openrouter/deepseek/deepseek-v3.2
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: cheap/gemini-flash-lite
-    litellm_params:
-      model: openrouter/google/gemini-3.1-flash-lite-preview
       api_key: os.environ/OPENROUTER_API_KEY
 
   # ── Free models (OpenRouter) ─────────────────────
@@ -37,71 +27,55 @@ model_list:
   # on 429 (rate limit) using the next deployment.
   - model_name: free
     litellm_params:
-      model: openrouter/qwen/qwen3-coder-480b:free
-      api_key: os.environ/OPENROUTER_API_KEY
-      rpm: 20   # rate limit hint for load balancer
-      tpm: 50000
-  - model_name: free
-    litellm_params:
-      model: openrouter/deepseek/deepseek-v3.2:free
+      model: openrouter/meta-llama/llama-3.3-70b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
       rpm: 20
       tpm: 50000
   - model_name: free
     litellm_params:
-      model: openrouter/google/gemini-3-flash-preview:free
+      model: openrouter/qwen/qwen3-coder:free
       api_key: os.environ/OPENROUTER_API_KEY
       rpm: 20
       tpm: 50000
   - model_name: free
     litellm_params:
-      model: openrouter/deepseek/deepseek-r1:free
+      model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
       rpm: 20
       tpm: 50000
   - model_name: free
     litellm_params:
-      model: openrouter/meta-llama/llama-4-maverick:free
+      model: openrouter/google/gemma-3-27b-it:free
       api_key: os.environ/OPENROUTER_API_KEY
       rpm: 20
       tpm: 50000
   - model_name: free
     litellm_params:
-      model: openrouter/google/gemini-2.5-flash:free
-      api_key: os.environ/OPENROUTER_API_KEY
-      rpm: 20
-      tpm: 50000
-  - model_name: free
-    litellm_params:
-      model: openrouter/meta-llama/llama-4-scout:free
+      model: openrouter/openai/gpt-oss-120b:free
       api_key: os.environ/OPENROUTER_API_KEY
       rpm: 20
       tpm: 50000
 
   # Named aliases for direct access to specific free models
+  - model_name: free/llama-3.3-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: free/qwen-coder
     litellm_params:
-      model: openrouter/qwen/qwen3-coder-480b:free
+      model: openrouter/qwen/qwen3-coder:free
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/deepseek-v3.2
+  - model_name: free/mistral-small
     litellm_params:
-      model: openrouter/deepseek/deepseek-v3.2:free
+      model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/gemini-3-flash
+  - model_name: free/gemma-3-27b
     litellm_params:
-      model: openrouter/google/gemini-3-flash-preview:free
+      model: openrouter/google/gemma-3-27b-it:free
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/deepseek-r1
+  - model_name: free/gpt-oss-120b
     litellm_params:
-      model: openrouter/deepseek/deepseek-r1:free
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/llama-4-maverick
-    litellm_params:
-      model: openrouter/meta-llama/llama-4-maverick:free
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/gemini-flash
-    litellm_params:
-      model: openrouter/google/gemini-2.5-flash:free
+      model: openrouter/openai/gpt-oss-120b:free
       api_key: os.environ/OPENROUTER_API_KEY
 
 router_settings:

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="stat-grid">
+  <div class="stat-card"><div class="value badge-critical" style="color:#fca5a5;">{{ critical_count }}</div><div class="label">Critical Threats</div></div>
+  <div class="stat-card"><div class="value" style="color:#fb923c;">{{ high_count }}</div><div class="label">High Threats</div></div>
+  <div class="stat-card"><div class="value" style="color:#f97316;">{{ recent_runs|length }}</div><div class="label">Recent Runs</div></div>
+</div>
+<div class="card">
+  <h2>Recent Threats</h2>
+  <table>
+    <thead><tr><th>Title</th><th>Severity</th><th>Type</th><th>CVEs</th><th>Affected Assets</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+    {% for t in threats %}
+    <tr>
+      <td><a href="/api/v1/threats/{{ t.id }}" style="color:#94a3b8;text-decoration:none;">{{ t.title or 'Unknown' }}</a></td>
+      <td>{% if t.severity %}<span class="badge badge-{{ t.severity }}">{{ t.severity }}</span>{% else %}<span class="badge badge-gray">—</span>{% endif %}</td>
+      <td>{{ t.threat_type or '—' }}</td>
+      <td style="font-size:0.8rem;color:#64748b;">{{ t.cve_ids or '—' }}</td>
+      <td>{{ t.affected_assets_count }}</td>
+      <td><span class="badge badge-gray">{{ t.status }}</span></td>
+      <td style="color:#64748b;font-size:0.8rem;">{{ t.created_at.strftime('%m-%d %H:%M') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:#475569;padding:2rem;">No threats processed yet. Add sources and run the pipeline.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <h2>Recent Analysis Runs</h2>
+  <table>
+    <thead><tr><th>Started</th><th>Trigger</th><th>Status</th><th>Processed</th><th>Critical</th></tr></thead>
+    <tbody>
+    {% for r in recent_runs %}
+    <tr>
+      <td style="color:#64748b;font-size:0.8rem;">{{ r.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>{{ r.trigger }}</td>
+      <td><span class="badge {% if r.status == 'completed' %}badge-ok{% elif r.status == 'error' %}badge-critical{% else %}badge-gray{% endif %}">{{ r.status }}</span></td>
+      <td>{{ r.threats_processed }}</td>
+      <td>{{ r.threats_critical }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" style="text-align:center;color:#475569;padding:1rem;">No runs yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
