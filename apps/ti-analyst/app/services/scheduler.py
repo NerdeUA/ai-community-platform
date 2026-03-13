@@ -160,12 +160,16 @@ def _process_items(items: list[dict], run_id, graph, os_client, model_config,
     from app.services.notifier import send_telegram_alert
 
     # ── 1. Build candidates (non-empty content) with their dedup hashes ──────────
+    # Dedup key: prefer source_url (stable identifier) over content hash so that
+    # the same article is never re-processed even if its content is later edited.
     candidates: list[tuple[dict, str]] = []
     for item in items:
         content = item.get("content", "")
         if not content.strip():
             continue
-        dedup_hash = hashlib.sha256(content.encode()).hexdigest()[:64]
+        source_url = (item.get("source_url") or "").strip()
+        dedup_input = source_url if source_url else content
+        dedup_hash = hashlib.sha256(dedup_input.encode()).hexdigest()[:64]
         candidates.append((item, dedup_hash))
 
     if not candidates:

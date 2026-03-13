@@ -1,8 +1,9 @@
 import csv
 import io
+import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
@@ -10,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import Asset
+from app.models.models import Asset, ThreatIntel
 from app.services.opensearch_client import OpenSearchClient
 from app.templates_config import templates
 
@@ -26,8 +27,45 @@ CRITICALITY_OPTIONS = ["low", "medium", "high", "critical"]
 @router.get("", response_class=HTMLResponse)
 def list_assets(request: Request, db: Annotated[Session, Depends(get_db)]):
     assets = db.query(Asset).order_by(Asset.criticality.desc(), Asset.vendor).all()
+
+    # Threat alerts for the last 7 days — count critical/high per asset vendor
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    recent_threats = (
+        db.query(ThreatIntel)
+        .filter(
+            ThreatIntel.created_at >= since,
+            ThreatIntel.status != "ignored",
+            ThreatIntel.affected_assets_count > 0,
+            ThreatIntel.severity.in_(["critical", "high"]),
+        )
+        .all()
+    )
+    # Build vendor → {critical: N, high: N} map from threats
+    vendor_alerts: dict[str, dict[str, int]] = {}
+    for threat in recent_threats:
+        try:
+            vendors = [v.lower() for v in json.loads(threat.affected_vendors or "[]")]
+        except Exception:
+            continue
+        for vendor in vendors:
+            if vendor not in vendor_alerts:
+                vendor_alerts[vendor] = {"critical": 0, "high": 0}
+            if threat.severity in ("critical", "high"):
+                vendor_alerts[vendor][threat.severity] += 1
+
+    # Map asset_id → alerts using asset.vendor
+    threat_alerts: dict[str, dict[str, int]] = {
+        str(a.id): vendor_alerts[a.vendor.lower()]
+        for a in assets
+        if a.vendor.lower() in vendor_alerts
+    }
+
     return templates.TemplateResponse(
-        request, "admin/assets.html", {"assets": assets, "criticality_options": CRITICALITY_OPTIONS}
+        request, "admin/assets.html", {
+            "assets": assets,
+            "criticality_options": CRITICALITY_OPTIONS,
+            "threat_alerts": threat_alerts,
+        }
     )
 
 

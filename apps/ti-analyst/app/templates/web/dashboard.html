@@ -974,6 +974,33 @@ function fetchProgress() {
     .catch(function() {});
 }
 
+// ── Apply URL query params as initial filters (e.g. from Assets page links) ──
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var changed = false;
+  if (params.get('period') && _period !== params.get('period')) {
+    _period = params.get('period'); changed = true;
+  }
+  if (params.get('vendor')) {
+    _searchVendor = params.get('vendor');
+    document.getElementById('s-vendor').value = _searchVendor; changed = true;
+  }
+  if (params.get('severity')) {
+    _searchSev = params.get('severity');
+    document.getElementById('s-sev').value = _searchSev; changed = true;
+  }
+  if (params.get('q')) {
+    _searchQ = params.get('q');
+    document.getElementById('s-q').value = _searchQ; changed = true;
+  }
+  if (changed) {
+    _syncUi();
+    fetchDashboardData();
+    // Clean URL without reload
+    history.replaceState(null, '', window.location.pathname);
+  }
+})();
+
 // Always poll for progress — handles runs starting after page load
 startProgressPolling();
 

@@ -254,13 +254,13 @@ def publisher_node(state: AgentState) -> AgentState:
         "You are a technical security writer. Create a detailed Operations Report in Markdown. "
         "Include: threat summary, CVEs, affected systems, detection commands, patch status, references. "
         "Write the entire report in Ukrainian language. "
-        "Strict limit: 800 words maximum. Always finish the last sentence completely before stopping."
+        "Target length: 350 words. Always finish the last sentence completely before stopping."
     ))
     exec_prompt = state["model_config"].get("publisher_exec_prompt", (
         "You are a CISO advisor. Create a concise Executive Summary. "
         "Include: risk level, business impact, recommended actions, financial exposure estimate. "
         "Write the entire summary in Ukrainian language. "
-        "Strict limit: 230 words maximum. Always finish the last sentence completely before stopping."
+        "Target length: 120 words. Always finish the last sentence completely before stopping."
     ))
     full_context = json.dumps({
         "threat_profile": state["threat_profile"],
@@ -269,8 +269,11 @@ def publisher_node(state: AgentState) -> AgentState:
     })
     reports: dict[str, str] = {}
     try:
-        reports["ops"] = _llm(analyst_model, ops_prompt, full_context, "ti.pipeline.publisher.ops", json_mode=False, max_tokens=1200)
-        reports["executive"] = _llm(analyst_model, exec_prompt, full_context, "ti.pipeline.publisher.exec", json_mode=False, max_tokens=350)
+        # max_tokens accounts for Ukrainian Cyrillic (~5 tokens/word) + Markdown overhead (~15%)
+        # ops:  500 words × 5 × 1.15 ≈ 2900 tokens  (no word cap in DB prompt → LLM may write more)
+        # exec: 200 words × 5 × 1.15 ≈ 1150 tokens
+        reports["ops"] = _llm(analyst_model, ops_prompt, full_context, "ti.pipeline.publisher.ops", json_mode=False, max_tokens=3000)
+        reports["executive"] = _llm(analyst_model, exec_prompt, full_context, "ti.pipeline.publisher.exec", json_mode=False, max_tokens=1200)
     except Exception as exc:
         logger.error(
             "publisher_node error trace_id=%s request_id=%s: %s",

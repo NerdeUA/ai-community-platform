@@ -1,12 +1,22 @@
+import calendar
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import feedparser
 import requests
 
 from app.database import SessionLocal
 from app.models.models import ThreatSource
+
+_MAX_ARTICLE_AGE_DAYS = 30  # skip RSS articles older than this
+
+
+def _entry_published(entry) -> datetime | None:
+    """Return UTC-aware publish time from a feedparser entry, or None."""
+    if getattr(entry, "published_parsed", None):
+        return datetime.fromtimestamp(calendar.timegm(entry.published_parsed), tz=timezone.utc)
+    return None
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +66,22 @@ def fetch_telegram(source: ThreatSource, db=None) -> list[dict]:
 
 
 def fetch_rss(url: str) -> list[dict]:
-    """Parse an RSS/Atom feed and return normalized items."""
+    """Parse an RSS/Atom feed and return normalized items.
+
+    Skips entries older than _MAX_ARTICLE_AGE_DAYS so that historical articles
+    that are still present in the feed do not enter the pipeline as new items.
+    Entries without a publish date are always included (cannot determine age).
+    """
     try:
         feed = feedparser.parse(url)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=_MAX_ARTICLE_AGE_DAYS)
         items = []
+        skipped_old = 0
         for entry in feed.entries[:20]:
+            pub_dt = _entry_published(entry)
+            if pub_dt is not None and pub_dt < cutoff:
+                skipped_old += 1
+                continue
             content = entry.get("summary") or entry.get("content", [{}])[0].get("value", "")
             items.append({
                 "source_url": entry.get("link", url),
@@ -68,6 +89,8 @@ def fetch_rss(url: str) -> list[dict]:
                 "content": content,
                 "published_at": entry.get("published", ""),
             })
+        if skipped_old:
+            logger.info("RSS skipped %d old entries (>%dd) from %s", skipped_old, _MAX_ARTICLE_AGE_DAYS, url)
         logger.info("RSS fetched %d items from %s", len(items), url)
         return items
     except Exception as exc:

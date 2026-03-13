@@ -27,16 +27,33 @@
     border: 5px solid transparent; border-right-color: #1e3a5f;
   }
   .asset-info-btn.open .asset-popover { display: block; }
+  .threat-dot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.2rem; height: 1.2rem; border-radius: 999px;
+    font-size: .68rem; font-weight: 700; line-height: 1;
+    padding: 0 .3rem; cursor: pointer; text-decoration: none;
+    margin-left: .35rem; vertical-align: middle; transition: opacity .15s;
+    white-space: nowrap;
+  }
+  .threat-dot:hover { opacity: .8; }
+  .threat-dot-critical { background: #3a0000; border: 1px solid #7f1d1d; color: #fca5a5; }
+  .threat-dot-high     { background: #3a1a00; border: 1px solid #92400e; color: #fdba74; }
 </style>
 <div class="card">
   <h2>Add Asset</h2>
-  <form action="/admin/assets/create" method="post" style="display:grid;grid-template-columns:repeat(5,1fr) auto;gap:0.5rem;align-items:end;">
-    <div class="form-group"><label>Name</label><input name="name" required placeholder="prod-nginx-01"></div>
-    <div class="form-group"><label>Vendor</label><input name="vendor" required placeholder="nginx"></div>
-    <div class="form-group"><label>Model/Product</label><input name="model" required placeholder="nginx"></div>
-    <div class="form-group"><label>SW Version</label><input name="software_version" placeholder="1.25.3"></div>
-    <div class="form-group"><label>Criticality</label><select name="criticality">{% for c in criticality_options %}<option>{{ c }}</option>{% endfor %}</select></div>
-    <button class="btn btn-primary" type="submit">Add</button>
+  <form action="/admin/assets/create" method="post">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.5rem;margin-bottom:0.5rem;">
+      <div class="form-group" style="margin-bottom:0;"><label>Name</label><input name="name" required placeholder="prod-nginx-01"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>Vendor</label><input name="vendor" required placeholder="nginx"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>Model/Product</label><input name="model" required placeholder="nginx"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>SW Version</label><input name="software_version" placeholder="1.25.3"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>Criticality</label><select name="criticality">{% for c in criticality_options %}<option>{{ c }}</option>{% endfor %}</select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:0.5rem;align-items:end;">
+      <div class="form-group" style="margin-bottom:0;"><label>Tags</label><input name="tags" placeholder="comma-separated"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>Notes / Опис</label><input name="notes" placeholder="Короткий опис активу"></div>
+      <button class="btn btn-primary" type="submit">Add</button>
+    </div>
   </form>
 </div>
 <div class="card" style="margin-top:0.5rem;">
@@ -71,7 +88,20 @@
       <td>{{ a.vendor }}</td>
       <td>{{ a.model }}</td>
       <td>{{ a.software_version or '—' }}</td>
-      <td><span class="badge badge-{{ a.criticality }}">{{ a.criticality }}</span></td>
+      <td>
+        <span class="badge badge-{{ a.criticality }}">{{ a.criticality }}</span>
+        {%- set alerts = threat_alerts.get(a.id|string, {}) -%}
+        {%- if alerts.get('critical', 0) > 0 %}
+        <a class="threat-dot threat-dot-critical"
+           href="/web?period=7d&vendor={{ a.vendor|urlencode }}&severity=critical"
+           title="{{ alerts.critical }} критичних загроз за 7 днів ({{ a.vendor }})">{{ alerts.critical }}</a>
+        {%- endif %}
+        {%- if alerts.get('high', 0) > 0 %}
+        <a class="threat-dot threat-dot-high"
+           href="/web?period=7d&vendor={{ a.vendor|urlencode }}&severity=high"
+           title="{{ alerts.high }} серйозних загроз за 7 днів ({{ a.vendor }})">{{ alerts.high }}</a>
+        {%- endif %}
+      </td>
       <td style="color:#64748b;font-size:0.8rem;">{{ a.tags or '—' }}</td>
       <td style="display:flex;gap:0.3rem;">
         <button class="btn btn-sm" onclick="openEdit('{{ a.id }}','{{ a.name|e }}','{{ a.vendor|e }}','{{ a.model|e }}','{{ a.software_version or '' }}','{{ a.criticality }}','{{ a.tags or '' }}','{{ a.notes or '' }}')">Edit</button>
