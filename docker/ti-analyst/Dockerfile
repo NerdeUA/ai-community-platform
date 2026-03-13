@@ -17,4 +17,4 @@ RUN chmod +x /usr/local/bin/ti-analyst-entrypoint
 EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/ti-analyst-entrypoint"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-include", "*.py", "--reload-exclude", "*/__pycache__/*"]

@@ -18,3 +18,4 @@ ruff==0.9.7
 apscheduler==3.10.4
 aiofiles==24.1.0
 telethon==1.37.0
+python-telegram-bot==21.9

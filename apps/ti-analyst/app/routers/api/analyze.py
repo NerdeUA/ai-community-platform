@@ -123,7 +123,7 @@ def trigger_analysis(req: AnalyzeRequest, db: Annotated[Session, Depends(get_db)
 
 @router.get("/threats")
 def list_threats(db: Annotated[Session, Depends(get_db)], limit: int = 20, severity: str | None = None) -> JSONResponse:
-    q = db.query(ThreatIntel)
+    q = db.query(ThreatIntel).filter(ThreatIntel.status != "ignored")
     if severity:
         q = q.filter(ThreatIntel.severity == severity)
     threats = q.order_by(ThreatIntel.created_at.desc()).limit(limit).all()
@@ -137,6 +137,72 @@ def list_threats(db: Annotated[Session, Depends(get_db)], limit: int = 20, sever
         "status": t.status,
         "created_at": t.created_at.isoformat(),
     } for t in threats])
+
+
+@router.post("/threats/{threat_id}/generate-reports")
+def generate_reports(threat_id: str, db: Annotated[Session, Depends(get_db)]) -> JSONResponse:
+    """Run publisher_node on-demand for a threat that has no reports yet."""
+    from app.graph.nodes import publisher_node
+
+    threat = db.query(ThreatIntel).filter(ThreatIntel.id == uuid.UUID(threat_id)).first()
+    if not threat:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    if threat.ops_report or threat.exec_report:
+        return JSONResponse({"status": "already_generated",
+                             "ops_report": threat.ops_report,
+                             "exec_report": threat.exec_report})
+
+    s = db.query(AgentSettings).first()
+    model_config: dict = {}
+    if s:
+        model_config = {
+            "analyst_model": s.analyst_model,
+            "publisher_ops_prompt": s.publisher_ops_prompt,
+            "publisher_exec_prompt": s.publisher_exec_prompt,
+        }
+
+    try:
+        vendors = json.loads(threat.affected_vendors or "[]")
+    except Exception:
+        vendors = []
+
+    state = {
+        "threat_profile": {
+            "title": threat.title,
+            "threat_type": threat.threat_type,
+            "cve_ids": threat.cve_ids.split(",") if threat.cve_ids else [],
+            "severity": threat.severity,
+            "confidence": threat.confidence,
+            "affected_vendors": vendors,
+            "raw_content": threat.raw_content,
+        },
+        "affected_assets": [],
+        "research_data": None,
+        "model_config": model_config,
+        "reports": {},
+        "status": "analyzed",
+        "ignore": False,
+        "error": None,
+    }
+
+    try:
+        result_state = publisher_node(state)
+    except Exception as exc:
+        logger.error("generate_reports failed for %s: %s", threat_id, exc)
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+    reports = result_state.get("reports", {})
+    threat.ops_report = reports.get("ops")
+    threat.exec_report = reports.get("executive")
+    if threat.ops_report or threat.exec_report:
+        threat.status = "reported"
+    db.commit()
+
+    return JSONResponse({
+        "status": "ok",
+        "ops_report": threat.ops_report,
+        "exec_report": threat.exec_report,
+    })
 
 
 @router.get("/threats/{threat_id}")

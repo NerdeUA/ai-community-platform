@@ -13,12 +13,13 @@ model_list:
   # DeepSeek V3.2: $0.25 input / $0.40 output — best value 2026
   - model_name: cheap
     litellm_params:
-      model: openrouter/deepseek/deepseek-v3.2
+#      model: openrouter/deepseek/deepseek-v3.2
+      model: openrouter/minimax/minimax-m2.5
       api_key: os.environ/OPENROUTER_API_KEY
-  # Named aliases for direct access to cheap models
-  - model_name: cheap/deepseek-v3.2
+  # glm-4.5-air:free — free model alias kept for testing
+  - model_name: cheap/glm-4.5-air
     litellm_params:
-      model: openrouter/deepseek/deepseek-v3.2
+      model: openrouter/z-ai/glm-4.5-air:free
       api_key: os.environ/OPENROUTER_API_KEY
 
   # ── Free models (OpenRouter) ─────────────────────
@@ -31,62 +32,39 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
       rpm: 20
       tpm: 50000
-  - model_name: free
-    litellm_params:
-      model: openrouter/qwen/qwen3-coder:free
-      api_key: os.environ/OPENROUTER_API_KEY
-      rpm: 20
-      tpm: 50000
+  # qwen3-coder:free removed — coding model, not suitable for CTI analysis.
   - model_name: free
     litellm_params:
       model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
       rpm: 20
       tpm: 50000
-  - model_name: free
-    litellm_params:
-      model: openrouter/google/gemma-3-27b-it:free
-      api_key: os.environ/OPENROUTER_API_KEY
-      rpm: 20
-      tpm: 50000
-  - model_name: free
-    litellm_params:
-      model: openrouter/openai/gpt-oss-120b:free
-      api_key: os.environ/OPENROUTER_API_KEY
-      rpm: 20
-      tpm: 50000
+  # gemma-3-27b-it:free removed — Google AI Studio returns 400 "Developer instruction
+  # is not enabled" (no system prompt support, incompatible with pipeline).
+  # gpt-oss-120b:free removed — OpenRouter data policy 404 for this account.
 
   # Named aliases for direct access to specific free models
   - model_name: free/llama-3.3-70b
     litellm_params:
       model: openrouter/meta-llama/llama-3.3-70b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/qwen-coder
-    litellm_params:
-      model: openrouter/qwen/qwen3-coder:free
-      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: free/mistral-small
     litellm_params:
       model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/gemma-3-27b
-    litellm_params:
-      model: openrouter/google/gemma-3-27b-it:free
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: free/gpt-oss-120b
-    litellm_params:
-      model: openrouter/openai/gpt-oss-120b:free
-      api_key: os.environ/OPENROUTER_API_KEY
 
 router_settings:
   routing_strategy: "least-busy"         # розподіляє запити між deployments
-  num_retries: 3                          # кількість retry при 429
-  retry_after: 5                          # секунд між retry
-  allowed_fails: 3                        # скільки 429 перед cooldown
-  cooldown_time: 60                       # секунд cooldown для провайдера що впав
+  num_retries: 2                          # кількість retry при 429
+  retry_after: 10                         # секунд між retry
+  allowed_fails: 2                        # скільки 429 перед cooldown
+  cooldown_time: 30                       # секунд cooldown (коротший = швидше відновлення)
   enable_pre_call_checks: true            # перевіряє rpm/tpm перед дзвінком
+  fallbacks:
+    - free: ["cheap"]                     # якщо всі free-deployments rate-limited → fallback на cheap
 
 general_settings:
+  server_root_path: "/tools/litellm"
   store_model_in_db: true
   store_prompts_in_spend_logs: true
   maximum_spend_logs_retention_period: "7d"

@@ -23,30 +23,36 @@ class OpenSearchHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         entry = self._format_record(record)
+        batch: list[dict] | None = None
         with self._lock:
             self._buffer.append(entry)
             if len(self._buffer) >= BULK_SIZE:
-                self._flush()
+                batch = self._buffer.copy()
+                self._buffer.clear()
+        if batch is not None:
+            self._send(batch)
 
     def flush(self) -> None:
         with self._lock:
-            self._flush()
+            batch = self._buffer.copy()
+            self._buffer.clear()
+        self._send(batch)
 
     def close(self) -> None:
         self.flush()
         super().close()
 
-    def _flush(self) -> None:
-        if not self._buffer:
+    def _send(self, entries: list[dict]) -> None:
+        """Send a batch to OpenSearch. Called WITHOUT self._lock held."""
+        if not entries:
             return
 
         index_name = f"{INDEX_PREFIX}_{datetime.now(timezone.utc).strftime('%Y_%m_%d')}"
         lines: list[str] = []
-        for entry in self._buffer:
+        for entry in entries:
             lines.append(json.dumps({"index": {"_index": index_name}}))
             lines.append(json.dumps(entry, default=str))
 
-        self._buffer.clear()
         body = "\n".join(lines) + "\n"
 
         try:

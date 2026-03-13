@@ -18,11 +18,10 @@
   </div>
 
   <form action="/admin/settings/update" method="post" id="tgChatForm"
-        style="display:grid;grid-template-columns:1fr auto auto;gap:0.5rem;align-items:end;margin-bottom:1rem;">
+        style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:0.5rem;align-items:end;margin-bottom:1rem;">
     {# Hidden fields to carry over all other settings unchanged #}
     <input type="hidden" name="triage_model" value="{{ settings.triage_model }}">
     <input type="hidden" name="analyst_model" value="{{ settings.analyst_model }}">
-    <input type="hidden" name="infra_model" value="{{ settings.infra_model }}">
     <input type="hidden" name="infra_model" value="{{ settings.infra_model }}">
     <input type="hidden" name="ingestion_cron" value="{{ settings.ingestion_cron }}">
     <input type="hidden" name="triage_prompt" value="{{ settings.triage_prompt }}">
@@ -41,6 +40,15 @@
              placeholder="-1001234567890 or personal ID"
              style="font-family:monospace;">
     </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label style="font-size:0.8rem;">Bot Allowed User IDs
+        <span style="color:#475569;font-weight:400;">(через кому, хто може писати боту)</span>
+      </label>
+      <input name="bot_allowed_user_ids"
+             value="{{ tg_allowed_ids }}"
+             placeholder="123456789, 987654321"
+             style="font-family:monospace;">
+    </div>
     <button class="btn btn-primary" type="submit" style="align-self:end;">Save</button>
     <button class="btn btn-primary" id="tgTestBtn" type="button"
             onclick="sendTgTest()" {% if not tg_token_set %}disabled{% endif %}
@@ -53,14 +61,16 @@
     <span id="tgTestResult" style="font-size:0.875rem;display:none;"></span>
   </div>
   <p style="color:#475569;font-size:0.78rem;margin-top:0.5rem;margin-bottom:0;">
-    "Send Test" надсилає у вказаний чат останній аналізований звіт (або ping якщо загроз ще немає).
-    Щоб дізнатися свій chat ID — напишіть <code>/start</code> боту <a href="https://t.me/userinfobot" style="color:#38bdf8;">@userinfobot</a>.
+    Напиши боту <code>/start</code> — він відповість твоїм user ID. Додай його у "Bot Allowed User IDs" і збережи.
+    Доступні команди: <code>/threats</code> <code>/latest</code> <code>/search CVE-...</code> або питай природньою мовою.
   </p>
 </div>
 
 <div class="card">
   <h2>Agent Configuration</h2>
   <form action="/admin/settings/update" method="post">
+    <input type="hidden" name="telegram_alert_chat_id" value="{{ tg_chat_id }}">
+    <input type="hidden" name="bot_allowed_user_ids" value="{{ tg_allowed_ids }}">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;">
       <div class="form-group"><label>Triage Model</label><input name="triage_model" value="{{ settings.triage_model }}" required></div>
       <div class="form-group"><label>Analyst Model</label><input name="analyst_model" value="{{ settings.analyst_model }}" required></div>

@@ -112,6 +112,23 @@ services:
       - traefik.http.routers.litellm-web.service=litellm-svc
       - traefik.http.services.litellm-svc.loadbalancer.server.port=4000
       - traefik.http.middlewares.strip-tools-litellm.stripprefix.prefixes=/tools/litellm
+      # Next.js asset prefix — LiteLLM loads static assets from /litellm-asset-prefix/_next/...
+      - traefik.http.routers.litellm-assets.rule=PathPrefix(`/litellm-asset-prefix`)
+      - traefik.http.routers.litellm-assets.entrypoints=web
+      - traefik.http.routers.litellm-assets.service=litellm-svc
+      # Swagger UI assets — loaded root-relative from the LiteLLM API docs page
+      - traefik.http.routers.litellm-swagger.rule=PathPrefix(`/swagger`)
+      - traefik.http.routers.litellm-swagger.entrypoints=web
+      - traefik.http.routers.litellm-swagger.service=litellm-svc
+      # /ui — LiteLLM redirects /tools/litellm/ui → /ui/ (root-relative, needs its own route)
+      - traefik.http.routers.litellm-ui.rule=PathPrefix(`/ui`)
+      - traefik.http.routers.litellm-ui.entrypoints=web
+      - traefik.http.routers.litellm-ui.middlewares=edge-auth@docker
+      - traefik.http.routers.litellm-ui.service=litellm-svc
+      # /openapi.json — fetched by LiteLLM UI to render API spec
+      - traefik.http.routers.litellm-openapi.rule=Path(`/openapi.json`)
+      - traefik.http.routers.litellm-openapi.entrypoints=web
+      - traefik.http.routers.litellm-openapi.service=litellm-svc
     env_file:
       - path: ./.env.local
         required: false

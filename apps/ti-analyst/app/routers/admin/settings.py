@@ -10,6 +10,9 @@ from app.models.models import AgentSettings, ThreatIntel
 from app.templates_config import templates
 
 router = APIRouter(prefix="/admin/settings", tags=["admin-settings"])
+# Security: all /admin/* routes are protected by Traefik edge-auth middleware
+# (compose.agent-ti-analyst.yaml → traefik.http.routers.ti-analyst-agent.middlewares=edge-auth@docker).
+# Application-level auth is intentionally absent — auth is enforced at the infrastructure layer.
 
 
 @router.get("", response_class=HTMLResponse)
@@ -23,10 +26,12 @@ def get_settings(request: Request, db: Annotated[Session, Depends(get_db)]):
     tg_token_set = bool(cfg.telegram_bot_token)
     # DB value takes precedence over env
     effective_chat_id = s.telegram_alert_chat_id or cfg.telegram_alert_chat_id or ""
+    effective_allowed_ids = s.bot_allowed_user_ids or cfg.telegram_bot_allowed_ids or ""
     return templates.TemplateResponse(request, "admin/settings.html", {
         "settings": s,
         "tg_token_set": tg_token_set,
         "tg_chat_id": effective_chat_id,
+        "tg_allowed_ids": effective_allowed_ids,
     })
 
 
@@ -76,6 +81,7 @@ def update_settings(
     publisher_exec_prompt: str = Form(...),
     openclaw_enabled: bool = Form(False),
     telegram_alert_chat_id: str = Form(""),
+    bot_allowed_user_ids: str = Form(""),
 ):
     s = db.query(AgentSettings).first()
     if not s:
@@ -92,5 +98,10 @@ def update_settings(
     s.publisher_exec_prompt = publisher_exec_prompt
     s.openclaw_enabled = openclaw_enabled
     s.telegram_alert_chat_id = telegram_alert_chat_id.strip() or None
+    s.bot_allowed_user_ids = bot_allowed_user_ids.strip() or None
     db.commit()
+
+    from app.services.scheduler import reschedule_ingestion
+    reschedule_ingestion(ingestion_cron)
+
     return RedirectResponse("/admin/settings", status_code=303)

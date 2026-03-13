@@ -14,6 +14,9 @@ from app.services.opensearch_client import OpenSearchClient
 from app.templates_config import templates
 
 router = APIRouter(prefix="/admin/assets", tags=["admin-assets"])
+# Security: all /admin/* routes are protected by Traefik edge-auth middleware
+# (compose.agent-ti-analyst.yaml → traefik.http.routers.ti-analyst-agent.middlewares=edge-auth@docker).
+# Application-level auth is intentionally absent — auth is enforced at the infrastructure layer.
 logger = logging.getLogger(__name__)
 
 CRITICALITY_OPTIONS = ["low", "medium", "high", "critical"]
@@ -93,10 +96,50 @@ async def import_csv(db: Annotated[Session, Depends(get_db)], file: UploadFile =
     return RedirectResponse(f"/admin/assets?imported={imported}", status_code=303)
 
 
+@router.post("/{asset_id}/update")
+def update_asset(
+    asset_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    name: str = Form(...),
+    vendor: str = Form(...),
+    model: str = Form(...),
+    software_version: str = Form(""),
+    criticality: str = Form("medium"),
+    tags: str = Form(""),
+    notes: str = Form(""),
+):
+    asset = db.query(Asset).filter(Asset.id == uuid.UUID(asset_id)).first()
+    if asset:
+        asset.name = name
+        asset.vendor = vendor
+        asset.model = model
+        asset.software_version = software_version or None
+        asset.criticality = criticality
+        asset.tags = tags or None
+        asset.notes = notes or None
+        db.commit()
+        db.refresh(asset)
+        try:
+            os_client = OpenSearchClient()
+            os_client.index_asset(str(asset.id), {
+                "name": asset.name, "vendor": asset.vendor, "model": asset.model,
+                "software_version": asset.software_version, "criticality": asset.criticality,
+                "tags": asset.tags, "created_at": asset.created_at.isoformat(),
+            })
+        except Exception as exc:
+            logger.warning("OpenSearch asset re-index failed: %s", exc)
+    return RedirectResponse("/admin/assets", status_code=303)
+
+
 @router.post("/{asset_id}/delete")
 def delete_asset(asset_id: str, db: Annotated[Session, Depends(get_db)]):
     asset = db.query(Asset).filter(Asset.id == uuid.UUID(asset_id)).first()
     if asset:
+        try:
+            os_client = OpenSearchClient()
+            os_client._request("DELETE", f"ti_analyst_assets/_doc/{asset_id}")
+        except Exception as exc:
+            logger.warning("OpenSearch asset delete failed: %s", exc)
         db.delete(asset)
         db.commit()
     return RedirectResponse("/admin/assets", status_code=303)

@@ -54,7 +54,14 @@ class OpenSearchClient:
     def search_assets(self, vendor: str | None = None, query: str | None = None) -> list[dict]:
         q = query or vendor or ""
         body = {
-            "query": {"match": {"text": q}},
+            "query": {
+                "match": {
+                    "text": {
+                        "query": q,
+                        "minimum_should_match": "75%",
+                    }
+                }
+            },
             "size": 20,
         }
         try:

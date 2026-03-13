@@ -26,14 +26,15 @@
     <thead><tr><th>Name</th><th>Vendor</th><th>Model</th><th>Version</th><th>Criticality</th><th>Tags</th><th>Actions</th></tr></thead>
     <tbody>
     {% for a in assets %}
-    <tr>
+    <tr id="row-{{ a.id }}">
       <td>{{ a.name }}</td>
       <td>{{ a.vendor }}</td>
       <td>{{ a.model }}</td>
       <td>{{ a.software_version or '—' }}</td>
       <td><span class="badge badge-{{ a.criticality }}">{{ a.criticality }}</span></td>
       <td style="color:#64748b;font-size:0.8rem;">{{ a.tags or '—' }}</td>
-      <td>
+      <td style="display:flex;gap:0.3rem;">
+        <button class="btn btn-sm" onclick="openEdit('{{ a.id }}','{{ a.name|e }}','{{ a.vendor|e }}','{{ a.model|e }}','{{ a.software_version or '' }}','{{ a.criticality }}','{{ a.tags or '' }}','{{ a.notes or '' }}')">Edit</button>
         <form action="/admin/assets/{{ a.id }}/delete" method="post" style="display:inline;" onsubmit="return confirm('Delete?')">
           <button class="btn btn-sm btn-danger">Del</button>
         </form>
@@ -45,4 +46,44 @@
     </tbody>
   </table>
 </div>
+
+<!-- Edit modal -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div class="card" style="width:480px;max-width:95vw;margin:0;">
+    <h3 style="margin-bottom:1rem;">Edit Asset</h3>
+    <form id="edit-form" method="post">
+      <div class="form-group"><label>Name</label><input id="e-name" name="name" required></div>
+      <div class="form-group"><label>Vendor</label><input id="e-vendor" name="vendor" required></div>
+      <div class="form-group"><label>Model/Product</label><input id="e-model" name="model" required></div>
+      <div class="form-group"><label>SW Version</label><input id="e-sw" name="software_version"></div>
+      <div class="form-group"><label>Criticality</label>
+        <select id="e-crit" name="criticality">{% for c in criticality_options %}<option>{{ c }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label>Tags</label><input id="e-tags" name="tags" placeholder="comma-separated"></div>
+      <div class="form-group"><label>Notes</label><textarea id="e-notes" name="notes" rows="2" style="width:100%;resize:vertical;"></textarea></div>
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
+        <button type="button" class="btn" onclick="closeEdit()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openEdit(id, name, vendor, model, sw, crit, tags, notes) {
+  document.getElementById('edit-form').action = '/admin/assets/' + id + '/update';
+  document.getElementById('e-name').value = name;
+  document.getElementById('e-vendor').value = vendor;
+  document.getElementById('e-model').value = model;
+  document.getElementById('e-sw').value = sw;
+  document.getElementById('e-crit').value = crit;
+  document.getElementById('e-tags').value = tags;
+  document.getElementById('e-notes').value = notes;
+  var m = document.getElementById('edit-modal');
+  m.style.display = 'flex';
+}
+function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; }
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
+</script>
 {% endblock %}

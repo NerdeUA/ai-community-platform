@@ -11,6 +11,15 @@
   .tg-card .tg-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; }
   .btn-tg { background: #166534; color: #86efac; }
   .btn-tg:hover { background: #15803d; }
+  .rss-card { background: #0f1823; border: 1px solid #1e3a5f; border-radius: 8px; padding: 1rem 1.25rem; margin-top: 0.75rem; }
+  .rss-card .rss-title { font-size: 1rem; font-weight: 600; color: #93c5fd; margin-bottom: 0.5rem; }
+  .rss-card .rss-meta { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; font-size: 0.85rem; }
+  .rss-card .rss-meta .k { color: #64748b; }
+  .rss-card .rss-meta .v { color: #e2e8f0; }
+  .rss-card .rss-desc { margin-top: 0.5rem; font-size: 0.825rem; color: #94a3b8; border-top: 1px solid #1e3a5f; padding-top: 0.5rem; white-space: pre-wrap; max-height: 60px; overflow: auto; }
+  .rss-card .rss-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; }
+  .btn-rss { background: #1e3a5f; color: #93c5fd; }
+  .btn-rss:hover { background: #1d4ed8; }
   .resolve-spinner { display:none; color:#94a3b8; font-size:0.85rem; }
   .resolve-error { display:none; color:#fca5a5; font-size:0.85rem; margin-top:0.5rem; }
   #tg-fields, #url-fields { transition: opacity 0.15s; }
@@ -37,7 +46,7 @@
 
     {# --- URL-based fields (rss / url / reddit) --- #}
     <div id="url-fields">
-      <div style="display:grid;grid-template-columns:3fr 1fr auto;gap:0.5rem;align-items:end;">
+      <div style="display:grid;grid-template-columns:3fr 1fr;gap:0.5rem;margin-bottom:0.5rem;">
         <div class="form-group" style="margin-bottom:0;">
           <label>URL</label>
           <input name="url" id="urlInput" placeholder="https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml">
@@ -46,6 +55,31 @@
           <label>Poll (min)</label>
           <input name="poll_interval_minutes" id="urlPoll" type="number" value="60" min="10">
         </div>
+      </div>
+
+      {# RSS: Verify button + confirmation card #}
+      <div id="rss-verify-section">
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.25rem;">
+          <button type="button" class="btn btn-rss" id="verifyRssBtn" onclick="verifyRss()">Verify Feed</button>
+          <span class="resolve-spinner" id="rssSpinner">Verifying…</span>
+        </div>
+        <div class="resolve-error" id="rssError"></div>
+        <div class="rss-card" id="rssCard" style="display:none;">
+          <div class="rss-title" id="rssCardTitle"></div>
+          <div class="rss-meta">
+            <span class="k">Entries</span> <span class="v" id="rssCardCount"></span>
+          </div>
+          <div class="rss-desc" id="rssCardDesc"></div>
+          <div class="rss-actions">
+            <button type="submit" class="btn btn-primary" id="rssConfirmBtn">Confirm &amp; Add</button>
+            <button type="button" class="btn" style="background:#1e293b;color:#94a3b8;" onclick="resetRssCard()">Cancel</button>
+            <span style="font-size:0.8rem;color:#475569;">Adding: <strong id="rssConfirmName"></strong></span>
+          </div>
+        </div>
+      </div>
+
+      {# Non-RSS direct Add button #}
+      <div id="url-add-section" style="display:none;">
         <button class="btn btn-primary" type="submit">Add</button>
       </div>
     </div>
@@ -104,12 +138,37 @@
 </div>
 
 <div class="card">
-  <h2>Configured Sources ({{ sources|length }})</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem;">
+    <h2 style="margin:0;">Configured Sources ({{ sources|length }})</h2>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <a href="/admin/sources/export"
+         class="btn btn-sm"
+         style="background:#1e293b;border:1px solid #334155;color:#94a3b8;text-decoration:none;font-size:.78rem;padding:.3rem .7rem;border-radius:4px;"
+         title="Download all sources as JSON">↓ Export JSON</a>
+      <button type="button"
+              class="btn btn-sm"
+              style="background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:.78rem;padding:.3rem .7rem;border-radius:4px;"
+              title="Import sources from a JSON file"
+              onclick="document.getElementById('import-file').click()">↑ Import JSON</button>
+      <form id="import-form" action="/admin/sources/import" method="post"
+            enctype="multipart/form-data" style="display:none;">
+        <input type="file" id="import-file" name="file" accept=".json"
+               onchange="this.form.submit()">
+      </form>
+    </div>
+  </div>
+  {% if import_msg %}
+  <div style="margin-bottom:.75rem;padding:.55rem .9rem;border-radius:5px;font-size:.85rem;
+    {% if '❌' in import_msg %}background:#3a0000;border:1px solid #7f1d1d;color:#fca5a5;
+    {% else %}background:#0f1a12;border:1px solid #166534;color:#86efac;{% endif %}">
+    {{ import_msg }}
+  </div>
+  {% endif %}
   <table>
     <thead>
       <tr>
         <th>Name</th><th>Type</th><th>Channel / URL</th><th>Poll</th>
-        <th>Status</th><th>Last Polled</th><th>Actions</th>
+        <th>Status</th><th>Last Polled</th><th>New Data</th><th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -130,6 +189,23 @@
       <td>{{ s.poll_interval_minutes }}m</td>
       <td>{% if s.enabled %}<span class="badge badge-ok">enabled</span>{% else %}<span class="badge badge-gray">disabled</span>{% endif %}</td>
       <td>{{ s.last_polled_at.strftime('%Y-%m-%d %H:%M') if s.last_polled_at else '—' }}</td>
+      <td>
+        {%- set stat = source_stats.get(s.name) -%}
+        {%- if stat and stat.total > 0 and stat.last_at -%}
+          <span style="color:#86efac;font-weight:600;">{{ stat.total }}</span>
+          <span style="color:#64748b;font-size:0.8rem;"> threats</span>
+          <br>
+          <span style="color:#94a3b8;font-size:0.8rem;">
+            {%- if stat.last_at.strftime('%Y-%m-%d') == now_date -%}
+              {{ stat.last_at.strftime('%H:%M') }}
+            {%- else -%}
+              {{ stat.last_at.strftime('%d.%m %H:%M') }}
+            {%- endif -%}
+          </span>
+        {%- else -%}
+          <span style="color:#475569;">—</span>
+        {%- endif -%}
+      </td>
       <td style="display:flex;gap:0.25rem;flex-wrap:wrap;">
         <button class="btn btn-sm" style="background:#1e3a5f;color:#93c5fd;"
                 onclick="toggleEdit('{{ s.id }}')">Edit</button>
@@ -151,7 +227,7 @@
       </td>
     </tr>
     <tr id="edit-row-{{ s.id }}" style="display:none;background:#0f1928;">
-      <td colspan="7" style="padding:0.75rem 1rem;">
+      <td colspan="8" style="padding:0.75rem 1rem;">
         <form action="/admin/sources/{{ s.id }}/update" method="post"
               style="display:grid;grid-template-columns:2fr {% if s.source_type != 'telegram' %}2fr {% endif %}1fr auto auto;gap:0.5rem;align-items:end;">
           <div class="form-group" style="margin-bottom:0;">
@@ -176,7 +252,7 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="7" style="text-align:center;color:#475569;padding:2rem;">No sources configured yet.</td></tr>
+    <tr><td colspan="8" style="text-align:center;color:#475569;padding:2rem;">No sources configured yet.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -184,17 +260,22 @@
 
 <script>
 function onTypeChange(type) {
-  var isTg = type === 'telegram';
-  document.getElementById('url-fields').style.display = isTg ? 'none' : '';
-  document.getElementById('tg-fields').style.display  = isTg ? '' : 'none';
+  var isTg  = type === 'telegram';
+  var isRss = type === 'rss';
+  document.getElementById('url-fields').style.display         = isTg ? 'none' : '';
+  document.getElementById('tg-fields').style.display          = isTg ? '' : 'none';
+  document.getElementById('rss-verify-section').style.display = isRss ? '' : 'none';
+  document.getElementById('url-add-section').style.display    = (!isTg && !isRss) ? '' : 'none';
 
-  // Manage required/disabled to avoid validation issues
   document.getElementById('urlInput').required = !isTg;
   document.getElementById('urlPoll').disabled  = isTg;
   document.getElementById('tgPoll').disabled   = !isTg;
 
   resetTgCard();
+  resetRssCard();
 }
+// Init on page load
+onTypeChange(document.getElementById('sourceType').value);
 
 function resetTgCard() {
   document.getElementById('tgCard').style.display = 'none';
@@ -262,6 +343,68 @@ function resolveChannel() {
     spin.style.display = 'none';
   });
 }
+
+function resetRssCard() {
+  document.getElementById('rssCard').style.display = 'none';
+  document.getElementById('rssError').style.display = 'none';
+  document.getElementById('verifyRssBtn').disabled = false;
+}
+
+function verifyRss() {
+  var url    = document.getElementById('urlInput').value.trim();
+  if (!url) { alert('Enter a feed URL first.'); return; }
+
+  var btn    = document.getElementById('verifyRssBtn');
+  var spin   = document.getElementById('rssSpinner');
+  var errDiv = document.getElementById('rssError');
+
+  btn.disabled = true;
+  spin.style.display = 'inline';
+  errDiv.style.display = 'none';
+  document.getElementById('rssCard').style.display = 'none';
+
+  fetch('/admin/sources/verify-rss', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: url })
+  })
+  .then(function(r) { return r.json().then(function(b) { return { ok: r.ok, body: b }; }); })
+  .then(function(res) {
+    spin.style.display = 'none';
+    if (!res.ok || res.body.error) {
+      errDiv.textContent = res.body.error || 'Unknown error';
+      errDiv.style.display = 'block';
+      btn.disabled = false;
+      return;
+    }
+    var d = res.body;
+    document.getElementById('rssCardTitle').textContent = d.title || '(no title)';
+    document.getElementById('rssCardCount').textContent = d.entry_count + ' items in feed';
+    var desc = document.getElementById('rssCardDesc');
+    if (d.description) { desc.textContent = d.description; desc.style.display = ''; }
+    else { desc.style.display = 'none'; }
+    // Auto-fill Name if blank
+    var nameInput = document.getElementById('sourceName');
+    if (!nameInput.value.trim() && d.title) { nameInput.value = d.title; }
+    document.getElementById('rssConfirmName').textContent = nameInput.value || d.title || url;
+    document.getElementById('rssCard').style.display = '';
+    // Leave btn disabled — user must confirm or cancel
+  })
+  .catch(function(e) {
+    spin.style.display = 'none';
+    errDiv.textContent = 'Network error: ' + e.message;
+    errDiv.style.display = 'block';
+    btn.disabled = false;
+  });
+}
+
+// Keep confirm label in sync with name input (RSS)
+document.getElementById('sourceName').addEventListener('input', function() {
+  var rssVisible = document.getElementById('rssCard').style.display !== 'none';
+  if (rssVisible) {
+    document.getElementById('rssConfirmName').textContent = this.value;
+  }
+});
 
 // Keep confirm button label in sync with name input
 document.getElementById('sourceName').addEventListener('input', function() {

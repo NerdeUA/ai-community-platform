@@ -26,6 +26,13 @@ def _after_ingestor(state: AgentState) -> str:
     return "continue"
 
 
+def _should_publish(state: AgentState) -> str:
+    """Only generate reports when the threat affects monitored assets."""
+    if state.get("affected_assets"):
+        return "publish"
+    return "skip"
+
+
 def build_graph() -> StateGraph:
     graph = StateGraph(AgentState)
 
@@ -50,7 +57,11 @@ def build_graph() -> StateGraph:
     )
 
     graph.add_edge("claw_bridge", "analyst")
-    graph.add_edge("infra_guard", "publisher")
+    graph.add_conditional_edges(
+        "infra_guard",
+        _should_publish,
+        {"publish": "publisher", "skip": END},
+    )
     graph.add_edge("publisher", END)
 
     return graph.compile()

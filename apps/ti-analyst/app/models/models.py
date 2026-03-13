@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import datetime
 
@@ -20,6 +21,7 @@ class ThreatSource(Base):
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     telegram_title: Mapped[str | None] = mapped_column(String(256), nullable=True)
     telegram_username: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    last_seen_msg_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     poll_interval_minutes: Mapped[int] = mapped_column(Integer, default=60)
     last_polled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -59,6 +61,16 @@ class ThreatIntel(Base):
     severity: Mapped[str | None] = mapped_column(String(32), nullable=True)  # low | medium | high | critical
     confidence: Mapped[str | None] = mapped_column(String(32), nullable=True)  # low | medium | high
     affected_vendors: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    @property
+    def affected_vendors_label(self) -> str:
+        """First two items from the affected_vendors JSON array, joined by ', '."""
+        try:
+            items = json.loads(self.affected_vendors or "[]")
+            return ", ".join(str(i) for i in items[:2]) if items else ""
+        except Exception:
+            return ""
+
     ops_report: Mapped[str | None] = mapped_column(Text, nullable=True)
     exec_report: Mapped[str | None] = mapped_column(Text, nullable=True)
     affected_assets_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -96,6 +108,7 @@ class AgentSettings(Base):
     infra_model: Mapped[str] = mapped_column(String(128), default="free")
     openclaw_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     telegram_alert_chat_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    bot_allowed_user_ids: Mapped[str | None] = mapped_column(Text, nullable=True)  # comma-separated Telegram user IDs
     ingestion_cron: Mapped[str] = mapped_column(String(64), default="0 */1 * * *")
     triage_prompt: Mapped[str] = mapped_column(
         Text,
@@ -129,14 +142,16 @@ class AgentSettings(Base):
         Text,
         default=(
             "You are a technical security writer. Create a detailed Operations Report in Markdown. "
-            "Include: threat summary, CVEs, affected systems, detection commands, patch status, references."
+            "Include: threat summary, CVEs, affected systems, detection commands, patch status, references. "
+            "Write the entire report in Ukrainian language."
         ),
     )
     publisher_exec_prompt: Mapped[str] = mapped_column(
         Text,
         default=(
             "You are a CISO advisor. Create a concise Executive Summary (max 200 words). "
-            "Include: risk level, business impact, recommended actions, financial exposure estimate."
+            "Include: risk level, business impact, recommended actions, financial exposure estimate. "
+            "Write the entire summary in Ukrainian language."
         ),
     )
     updated_at: Mapped[datetime] = mapped_column(

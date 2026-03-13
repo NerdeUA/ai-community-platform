@@ -1,42 +1,276 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<div class="stat-grid">
-  <div class="stat-card"><div class="value badge-critical" style="color:#fca5a5;">{{ critical_count }}</div><div class="label">Critical Threats</div></div>
-  <div class="stat-card"><div class="value" style="color:#fb923c;">{{ high_count }}</div><div class="label">High Threats</div></div>
-  <div class="stat-card"><div class="value" style="color:#f97316;">{{ recent_runs|length }}</div><div class="label">Recent Runs</div></div>
+<style>
+  /* ── Threat modal ───────────────────────────────────────────────────────── */
+  #threat-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(2px);
+    align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  #threat-overlay.open { display: flex; }
+  #threat-modal {
+    background: #0f1923; border: 1px solid #1e3a5f;
+    border-radius: 10px; width: 100%; max-width: 780px;
+    max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  #threat-modal-head {
+    padding: 1rem 1.25rem .75rem;
+    border-bottom: 1px solid #1e3a5f;
+    display: flex; align-items: flex-start; gap: .75rem;
+  }
+  #threat-modal-head .m-title {
+    flex: 1; font-size: 1.05rem; font-weight: 600;
+    color: #e2e8f0; line-height: 1.3;
+  }
+  #threat-modal-close {
+    background: none; border: none; cursor: pointer;
+    color: #475569; font-size: 1.4rem; line-height: 1;
+    padding: 0 .25rem; flex-shrink: 0;
+  }
+  #threat-modal-close:hover { color: #94a3b8; }
+  #threat-modal-meta {
+    padding: .65rem 1.25rem; border-bottom: 1px solid #1e3a5f;
+    display: flex; flex-wrap: wrap; gap: .4rem .9rem;
+    font-size: .82rem;
+  }
+  #threat-modal-meta .m-kv { display: flex; align-items: center; gap: .3rem; }
+  #threat-modal-meta .m-k { color: #475569; }
+  #threat-modal-meta .m-v { color: #cbd5e1; }
+  #threat-modal-body {
+    flex: 1; overflow-y: auto; padding: 1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .m-section-title {
+    font-size: .75rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: #475569; margin-bottom: .4rem;
+  }
+  .m-section-toggle {
+    cursor: pointer; user-select: none;
+  }
+  .m-section-toggle:hover { color: #94a3b8; }
+  .m-section-caret { display: inline-block; transition: transform .2s; margin-right: .35rem; }
+  .m-ops-wrap { background: #060f16; border: 1px solid #1e293b; border-radius: 6px; overflow: hidden; }
+  #m-exec-raw, #m-ops-raw {
+    padding: .75rem 1rem;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: .78rem; color: #94a3b8; line-height: 1.6;
+    white-space: pre-wrap; overflow-x: auto;
+  }
+  /* raw markdown inline highlights */
+  #m-exec-raw .ops-h1, #m-ops-raw .ops-h1   { color: #7dd3fc; font-weight: 700; }
+  #m-exec-raw .ops-h2, #m-ops-raw .ops-h2   { color: #67e8f9; font-weight: 600; }
+  #m-exec-raw .ops-bold, #m-ops-raw .ops-bold { color: #e2e8f0; font-weight: 600; }
+  #m-exec-raw .ops-code, #m-ops-raw .ops-code { background:#1e3a5f; border-radius:3px; padding:0 3px; color:#7dd3fc; }
+  /* preview rendered markdown */
+  #m-exec-preview, #m-ops-preview {
+    display: none;
+    padding: .85rem 1.1rem;
+    font-size: .875rem; color: #cbd5e1; line-height: 1.65;
+  }
+  #m-exec-preview h1,#m-exec-preview h2,#m-exec-preview h3,
+  #m-ops-preview h1,#m-ops-preview h2,#m-ops-preview h3 {
+    color: #7dd3fc; margin: .9rem 0 .35rem; font-weight: 700;
+  }
+  #m-exec-preview h1, #m-ops-preview h1 { font-size: 1.05rem; border-bottom: 1px solid #1e3a5f; padding-bottom: .25rem; }
+  #m-exec-preview h2, #m-ops-preview h2 { font-size: .95rem; }
+  #m-exec-preview h3, #m-ops-preview h3 { font-size: .875rem; color: #67e8f9; }
+  #m-exec-preview p,  #m-ops-preview p  { margin: .4rem 0; }
+  #m-exec-preview ul, #m-exec-preview ol,
+  #m-ops-preview ul,  #m-ops-preview ol  { padding-left: 1.4rem; margin: .4rem 0; }
+  #m-exec-preview li, #m-ops-preview li  { margin: .2rem 0; }
+  #m-exec-preview strong, #m-ops-preview strong { color: #e2e8f0; }
+  #m-exec-preview em,     #m-ops-preview em     { color: #94a3b8; font-style: italic; }
+  #m-exec-preview code, #m-ops-preview code { background: #1e3a5f; border-radius: 3px; padding: .1rem .35rem; font-family: 'Fira Code','Courier New',monospace; font-size: .8rem; color: #7dd3fc; }
+  #m-exec-preview pre,  #m-ops-preview pre  { background: #0a1520; border: 1px solid #1e293b; border-radius: 6px; padding: .75rem 1rem; overflow-x: auto; margin: .5rem 0; }
+  #m-exec-preview pre code, #m-ops-preview pre code { background: none; padding: 0; font-size: .78rem; color: #94a3b8; }
+  #m-exec-preview hr,   #m-ops-preview hr   { border: none; border-top: 1px solid #1e3a5f; margin: .75rem 0; }
+  #m-exec-preview blockquote, #m-ops-preview blockquote { border-left: 3px solid #1e3a5f; padding-left: .75rem; color: #64748b; margin: .4rem 0; }
+  #m-exec-preview table, #m-ops-preview table {
+    width: 100%; border-collapse: collapse; margin: .6rem 0; font-size: .82rem;
+  }
+  #m-exec-preview th, #m-ops-preview th {
+    background: #1e3a5f; color: #7dd3fc; font-weight: 600;
+    padding: .35rem .65rem; text-align: left; border: 1px solid #253f5e;
+  }
+  #m-exec-preview td, #m-ops-preview td {
+    padding: .3rem .65rem; border: 1px solid #1e293b; color: #cbd5e1; vertical-align: top;
+  }
+  #m-exec-preview tr:nth-child(even) td, #m-ops-preview tr:nth-child(even) td {
+    background: #060f16;
+  }
+  /* Raw/Preview toggle */
+  .ops-toggle {
+    background: #0f1923; border: 1px solid #1e3a5f; color: #475569;
+    font-size: .72rem; padding: .2rem .6rem; border-radius: 4px;
+    cursor: pointer; transition: all .15s;
+  }
+  .ops-toggle.active { background: #1e3a5f; color: #93c5fd; border-color: #2563eb; }
+  .ops-toggle:hover:not(.active) { color: #94a3b8; border-color: #334155; }
+  .stat-filter:hover { border-color: #334155; opacity: .85; }
+  .stat-filter.active { outline: 2px solid #2563eb; outline-offset: 2px; }
+  /* Pagination */
+  .pg-bar { display:flex; align-items:center; justify-content:space-between; margin-top:.75rem; flex-wrap:wrap; gap:.5rem; }
+  .pg-info { font-size:.78rem; color:#64748b; }
+  .pg-controls { display:flex; align-items:center; gap:.25rem; }
+  .pg-btn { background:#0f1923; border:1px solid #1e3a5f; color:#475569; font-size:.75rem;
+            padding:.2rem .55rem; border-radius:4px; cursor:pointer; transition:all .15s; min-width:28px; text-align:center; }
+  .pg-btn:hover:not(:disabled):not(.active) { color:#94a3b8; border-color:#334155; }
+  .pg-btn.active { background:#1e3a5f; color:#93c5fd; border-color:#2563eb; }
+  .pg-btn:disabled { opacity:.35; cursor:default; }
+  .pg-size { background:#0f1923; border:1px solid #1e3a5f; color:#94a3b8; font-size:.75rem;
+             padding:.2rem .4rem; border-radius:4px; cursor:pointer; }
+  .m-spinner { text-align:center; padding:2rem; color:#475569; }
+  .badge-low      { background:#1a3a2a; color:#86efac; }
+  .badge-medium   { background:#3a2d00; color:#fde68a; }
+  .badge-high     { background:#3a1a00; color:#fdba74; }
+  .badge-critical { background:#3a0000; color:#fca5a5; }
+  /* Auto-refresh toolbar */
+  .refresh-bar { display:flex; align-items:center; justify-content:flex-end; gap:.5rem; margin-bottom:.75rem; }
+  .refresh-select { background:#0f1923; border:1px solid #1e3a5f; color:#94a3b8; font-size:.75rem;
+                    padding:.25rem .5rem; border-radius:4px; cursor:pointer; }
+  .refresh-countdown { font-size:.72rem; color:#475569; min-width:3rem; text-align:right; }
+  .refresh-btn { background:#0f1923; border:1px solid #1e3a5f; color:#475569; font-size:.75rem;
+                 padding:.25rem .5rem; border-radius:4px; cursor:pointer; }
+  .refresh-btn:hover { color:#94a3b8; border-color:#334155; }
+  /* Period switcher + search bar */
+  .search-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; margin-bottom:.75rem; }
+  .period-tabs { display:flex; border:1px solid #1e3a5f; border-radius:5px; overflow:hidden; flex-shrink:0; }
+  .period-btn { background:#0a1520; border:none; color:#475569; font-size:.75rem;
+                padding:.3rem .65rem; cursor:pointer; transition:all .15s; }
+  .period-btn:hover:not(.active) { background:#0f1923; color:#94a3b8; }
+  .period-btn.active { background:#1e3a5f; color:#93c5fd; }
+  .search-input { background:#0a1520; border:1px solid #1e3a5f; color:#cbd5e1; font-size:.78rem;
+                  padding:.3rem .55rem; border-radius:4px; outline:none; min-width:0; }
+  .search-input::placeholder { color:#334155; }
+  .search-input:focus { border-color:#2563eb; }
+  .search-select { background:#0a1520; border:1px solid #1e3a5f; color:#94a3b8; font-size:.78rem;
+                   padding:.3rem .4rem; border-radius:4px; cursor:pointer; }
+  .search-select:focus { outline:none; border-color:#2563eb; }
+  .search-sep { width:1px; height:1.2rem; background:#1e3a5f; flex-shrink:0; margin:0 .1rem; }
+  .search-reset { background:none; border:1px solid #334155; color:#475569; font-size:.75rem;
+                  padding:.28rem .6rem; border-radius:4px; cursor:pointer; transition:all .15s; }
+  .search-reset:hover { color:#94a3b8; border-color:#475569; }
+</style>
+
+<div class="refresh-bar">
+  <span class="refresh-countdown" id="rf-countdown"></span>
+  <button class="refresh-btn" onclick="fetchDashboardData()" title="Refresh now">↻</button>
+  <select class="refresh-select" id="rf-select">
+    <option value="0">No auto-refresh</option>
+    <option value="5">5s</option>
+    <option value="10">10s</option>
+    <option value="30">30s</option>
+    <option value="60">1m</option>
+    <option value="300">5m</option>
+    <option value="1800">30m</option>
+    <option value="3600">1h</option>
+    <option value="21600">6h</option>
+    <option value="43200">12h</option>
+    <option value="86400">24h</option>
+  </select>
 </div>
+
+<div class="stat-grid">
+  <div class="stat-card stat-filter" data-filter-sev="critical" onclick="filterBySev('critical')" title="Filter by Critical" style="cursor:pointer;">
+    <div class="value badge-critical" style="color:#fca5a5;">{{ critical_count }}</div><div class="label">Critical Today</div>
+  </div>
+  <div class="stat-card stat-filter" data-filter-sev="high" onclick="filterBySev('high')" title="Filter by High" style="cursor:pointer;">
+    <div class="value" style="color:#fb923c;">{{ high_count }}</div><div class="label">High Today</div>
+  </div>
+  <div class="stat-card"><div class="value" id="runs-count" style="color:#f97316;">{{ recent_runs|length }}</div><div class="label">Recent Runs</div></div>
+</div>
+
 <div class="card">
-  <h2>Recent Threats</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem;">
+    <h2 style="margin:0;" id="threats-heading">Threats</h2>
+  </div>
+  <div class="search-toolbar">
+    <div class="period-tabs">
+      <button class="period-btn active" data-period="today" onclick="setPeriod('today')">Today</button>
+      <button class="period-btn" data-period="24h" onclick="setPeriod('24h')">24h</button>
+      <button class="period-btn" data-period="7d" onclick="setPeriod('7d')">7 days</button>
+      <button class="period-btn" data-period="30d" onclick="setPeriod('30d')">30 days</button>
+    </div>
+    <div class="search-sep"></div>
+    <input class="search-input" id="s-q"      type="text" placeholder="Title…"  oninput="debounceSearch()" style="flex:2;min-width:100px;">
+    <select class="search-select" id="s-sev"  onchange="applySearch()">
+      <option value="">All severity</option>
+      <option value="critical">Critical</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <input class="search-input" id="s-type"   type="text" placeholder="Type…"   oninput="debounceSearch()" style="flex:1;min-width:70px;">
+    <input class="search-input" id="s-vendor" type="text" placeholder="Vendor…" oninput="debounceSearch()" style="flex:1.5;min-width:80px;">
+    <input class="search-input" id="s-cve"    type="text" placeholder="CVE…"    oninput="debounceSearch()" style="flex:1.2;min-width:70px;">
+    <button class="search-reset" id="filter-reset" onclick="resetSearch()" style="display:none;">✕ Reset</button>
+  </div>
   <table>
-    <thead><tr><th>Title</th><th>Severity</th><th>Type</th><th>CVEs</th><th>Affected Assets</th><th>Status</th><th>Date</th></tr></thead>
-    <tbody>
+    <thead><tr><th>Title</th><th>Source</th><th>Severity</th><th>Type</th><th>Vendor / Product</th><th>CVEs</th><th>Assets</th><th>Date</th></tr></thead>
+    <tbody id="threats-tbody">
     {% for t in threats %}
-    <tr>
-      <td><a href="/api/v1/threats/{{ t.id }}" style="color:#94a3b8;text-decoration:none;">{{ t.title or 'Unknown' }}</a></td>
+    <tr data-sev="{{ t.severity or '' }}">
+      <td>
+        <a href="#" onclick="openThreat('{{ t.id }}');return false;"
+           style="color:#93c5fd;text-decoration:none;cursor:pointer;">
+          {{ t.title or 'Unknown' }}
+        </a>
+      </td>
+      <td style="font-size:0.8rem;color:#64748b;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        {{ t.source_name or '—' }}
+      </td>
       <td>{% if t.severity %}<span class="badge badge-{{ t.severity }}">{{ t.severity }}</span>{% else %}<span class="badge badge-gray">—</span>{% endif %}</td>
       <td>{{ t.threat_type or '—' }}</td>
+      <td style="font-size:0.8rem;color:#64748b;">{{ t.affected_vendors_label or '—' }}</td>
       <td style="font-size:0.8rem;color:#64748b;">{{ t.cve_ids or '—' }}</td>
       <td>{{ t.affected_assets_count }}</td>
-      <td><span class="badge badge-gray">{{ t.status }}</span></td>
       <td style="color:#64748b;font-size:0.8rem;">{{ t.created_at.strftime('%m-%d %H:%M') }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="7" style="text-align:center;color:#475569;padding:2rem;">No threats processed yet. Add sources and run the pipeline.</td></tr>
+    <tr><td colspan="8" style="text-align:center;color:#475569;padding:2rem;">No threats processed yet. Add sources and run the pipeline.</td></tr>
     {% endfor %}
     </tbody>
   </table>
+  <div class="pg-bar" id="pg-bar">
+    <span class="pg-info" id="pg-info"></span>
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <div class="pg-controls" id="pg-controls"></div>
+      <select class="pg-size" id="pg-size" onchange="setPageSize(+this.value)">
+        <option value="10">10 / page</option>
+        <option value="20">20 / page</option>
+        <option value="50">50 / page</option>
+      </select>
+    </div>
+  </div>
 </div>
+
 <div class="card">
   <h2>Recent Analysis Runs</h2>
   <table>
     <thead><tr><th>Started</th><th>Trigger</th><th>Status</th><th>Processed</th><th>Critical</th></tr></thead>
-    <tbody>
+    <tbody id="runs-tbody">
     {% for r in recent_runs %}
     <tr>
       <td style="color:#64748b;font-size:0.8rem;">{{ r.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
       <td>{{ r.trigger }}</td>
-      <td><span class="badge {% if r.status == 'completed' %}badge-ok{% elif r.status == 'error' %}badge-critical{% else %}badge-gray{% endif %}">{{ r.status }}</span></td>
+      <td>
+        {% if r.status == 'failed' %}
+          <span class="badge badge-critical" style="cursor:help;"
+                title="{{ r.error_message or 'No error details' }}">failed</span>
+        {% elif r.status == 'running' %}
+          <span class="badge" style="background:#1e3a5f;color:#93c5fd;" id="badge-run-{{ r.id }}">running</span>
+          <div id="prog-run-{{ r.id }}" style="font-size:.7rem;color:#64748b;margin-top:.2rem;line-height:1.4;"></div>
+        {% elif r.status == 'completed' %}
+          <span class="badge badge-ok">completed</span>
+        {% else %}
+          <span class="badge badge-gray">{{ r.status }}</span>
+        {% endif %}
+      </td>
       <td>{{ r.threats_processed }}</td>
       <td>{{ r.threats_critical }}</td>
     </tr>
@@ -46,4 +280,733 @@
     </tbody>
   </table>
 </div>
+
+<!-- ── Threat detail modal ───────────────────────────────────────────────── -->
+<div id="threat-overlay" onclick="if(event.target===this)closeModal()">
+  <div id="threat-modal">
+    <div id="threat-modal-head">
+      <span id="m-sev-badge"></span>
+      <span class="m-title" id="m-title">Loading…</span>
+      <button id="threat-modal-close" onclick="closeModal()" title="Close">✕</button>
+    </div>
+    <div id="threat-modal-meta"></div>
+    <div id="threat-modal-body">
+      <div class="m-spinner" id="m-spinner">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Search / period state ────────────────────────────────────────────────────
+var _period      = 'today';
+var _searchQ     = '';
+var _searchSev   = '';
+var _searchType  = '';
+var _searchVendor= '';
+var _searchCve   = '';
+var _debounceTimer = null;
+
+var PERIOD_LABELS = {today:'Today', '24h':'Last 24h', '7d':'Last 7 days', '30d':'Last 30 days'};
+
+function _buildUrl() {
+  var p = new URLSearchParams();
+  if (_period !== 'today')  p.set('period',      _period);
+  if (_searchQ)             p.set('q',           _searchQ);
+  if (_searchSev)           p.set('severity',    _searchSev);
+  if (_searchType)          p.set('threat_type', _searchType);
+  if (_searchVendor)        p.set('vendor',      _searchVendor);
+  if (_searchCve)           p.set('cve',         _searchCve);
+  var qs = p.toString();
+  return '/web/dashboard-data' + (qs ? '?' + qs : '');
+}
+
+function _anyFilter() {
+  return _period !== 'today' || _searchQ || _searchSev || _searchType || _searchVendor || _searchCve;
+}
+
+function _syncUi() {
+  // Period buttons
+  document.querySelectorAll('.period-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.period === _period);
+  });
+  // Heading
+  var label = PERIOD_LABELS[_period] || _period;
+  document.getElementById('threats-heading').textContent = 'Threats — ' + label;
+  // Stat card labels
+  var cl = document.querySelector('[data-filter-sev="critical"] .label');
+  var hl = document.querySelector('[data-filter-sev="high"] .label');
+  if (cl) cl.textContent = 'Critical — ' + label;
+  if (hl) hl.textContent = 'High — ' + label;
+  // Reset button
+  var rst = document.getElementById('filter-reset');
+  if (rst) rst.style.display = _anyFilter() ? '' : 'none';
+}
+
+function setPeriod(p) {
+  _period = p;
+  _currentPage = 1;
+  _syncUi();
+  fetchDashboardData();
+}
+
+function applySearch() {
+  _searchQ      = (document.getElementById('s-q')      || {}).value || '';
+  _searchSev    = (document.getElementById('s-sev')    || {}).value || '';
+  _searchType   = (document.getElementById('s-type')   || {}).value || '';
+  _searchVendor = (document.getElementById('s-vendor') || {}).value || '';
+  _searchCve    = (document.getElementById('s-cve')    || {}).value || '';
+  _currentPage  = 1;
+  _syncUi();
+  fetchDashboardData();
+}
+
+function debounceSearch() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(applySearch, 350);
+}
+
+function resetSearch() {
+  _period = 'today'; _searchQ = ''; _searchSev = ''; _searchType = ''; _searchVendor = ''; _searchCve = '';
+  document.getElementById('s-q').value      = '';
+  document.getElementById('s-sev').value    = '';
+  document.getElementById('s-type').value   = '';
+  document.getElementById('s-vendor').value = '';
+  document.getElementById('s-cve').value    = '';
+  _currentPage = 1;
+  _syncUi();
+  fetchDashboardData();
+}
+
+// ── Pagination state ─────────────────────────────────────────────────────────
+var _allRows     = [];   // all <tr data-sev> elements
+var _filtered    = [];   // currently visible subset
+var _pageSize    = 10;
+var _currentPage = 1;
+
+function _initTable() {
+  _allRows = Array.from(document.querySelectorAll('#threats-tbody tr[data-sev]'));
+  _filtered = _allRows.slice();
+  _syncUi();
+  _renderPage();
+}
+
+function _renderPage() {
+  var total = _filtered.length;
+  var totalPages = Math.max(1, Math.ceil(total / _pageSize));
+  if (_currentPage > totalPages) _currentPage = totalPages;
+
+  var start = (_currentPage - 1) * _pageSize;
+  var end   = start + _pageSize;
+
+  // show/hide rows
+  _allRows.forEach(function(r) { r.style.display = 'none'; });
+  _filtered.slice(start, end).forEach(function(r) { r.style.display = ''; });
+
+  // info label
+  var from = total === 0 ? 0 : start + 1;
+  var to   = Math.min(end, total);
+  document.getElementById('pg-info').textContent =
+    total === 0 ? 'No threats' : from + '–' + to + ' of ' + total;
+
+  // page buttons
+  var ctrl = document.getElementById('pg-controls');
+  ctrl.innerHTML = '';
+
+  function _btn(label, page, disabled, active) {
+    var b = document.createElement('button');
+    b.className = 'pg-btn' + (active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    if (!disabled && !active) b.onclick = function() { _currentPage = page; _renderPage(); };
+    ctrl.appendChild(b);
+  }
+
+  _btn('‹', _currentPage - 1, _currentPage === 1, false);
+
+  // sliding window of page numbers
+  var window_start = Math.max(1, _currentPage - 2);
+  var window_end   = Math.min(totalPages, window_start + 4);
+  window_start = Math.max(1, window_end - 4);
+
+  if (window_start > 1) { _btn('1', 1, false, false); if (window_start > 2) _btn('…', null, true, false); }
+  for (var p = window_start; p <= window_end; p++) _btn(p, p, false, p === _currentPage);
+  if (window_end < totalPages) { if (window_end < totalPages - 1) _btn('…', null, true, false); _btn(totalPages, totalPages, false, false); }
+
+  _btn('›', _currentPage + 1, _currentPage === totalPages, false);
+
+  // hide pagination bar if only 1 page and no data
+  document.getElementById('pg-bar').style.display = total === 0 ? 'none' : '';
+}
+
+function setPageSize(n) {
+  _pageSize    = n;
+  _currentPage = 1;
+  _renderPage();
+}
+
+function filterBySev(sev) {
+  _searchSev = sev || '';
+  var sevEl = document.getElementById('s-sev');
+  if (sevEl) sevEl.value = _searchSev;
+  _currentPage = 1;
+
+  document.querySelectorAll('.stat-filter').forEach(function(c) {
+    c.classList.toggle('active', sev && c.dataset.filterSev === sev);
+  });
+
+  _syncUi();
+  fetchDashboardData();
+}
+
+// Init on load
+_initTable();
+
+var SEV_LABELS = {critical:'🔴 CRITICAL',high:'🟠 HIGH',medium:'🟡 MEDIUM',low:'🟢 LOW'};
+var SEV_COLORS = {critical:'#fca5a5',high:'#fdba74',medium:'#fde68a',low:'#86efac'};
+
+function openThreat(id) {
+  var overlay = document.getElementById('threat-overlay');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Reset
+  document.getElementById('m-title').textContent = 'Loading…';
+  document.getElementById('m-sev-badge').textContent = '';
+  document.getElementById('m-sev-badge').style.cssText = '';
+  document.getElementById('threat-modal-meta').innerHTML = '';
+  document.getElementById('threat-modal-body').innerHTML = '<div class="m-spinner">Loading…</div>';
+
+  fetch('/api/v1/threats/' + id)
+    .then(function(r) { return r.json(); })
+    .then(function(d) { renderModal(d); })
+    .catch(function(e) {
+      document.getElementById('threat-modal-body').innerHTML =
+        '<div style="color:#fca5a5;padding:1rem;">Failed to load: ' + e.message + '</div>';
+    });
+}
+
+function closeModal() {
+  document.getElementById('threat-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+function renderModal(d) {
+  _currentThreatId = d.id || null;
+  // Title + severity badge
+  var sev = (d.severity || '').toLowerCase();
+  var sevEl = document.getElementById('m-sev-badge');
+  if (sev && SEV_LABELS[sev]) {
+    sevEl.textContent = SEV_LABELS[sev];
+    sevEl.style.cssText = 'font-size:.75rem;font-weight:700;white-space:nowrap;padding:.2rem .5rem;border-radius:4px;background:' +
+      (sev==='critical'?'#3a0000':sev==='high'?'#3a1a00':sev==='medium'?'#3a2d00':'#1a3a2a') +
+      ';color:' + (SEV_COLORS[sev]||'#94a3b8');
+  }
+  document.getElementById('m-title').textContent = d.title || 'Unknown threat';
+
+  // Meta row
+  var meta = [];
+  if (d.threat_type)  meta.push(kv('Type', esc(d.threat_type)));
+  if (d.confidence)   meta.push(kv('Confidence', esc(d.confidence)));
+  if (d.cve_ids)      meta.push(kv('CVEs', '<span style="color:#7dd3fc;">' + esc(d.cve_ids) + '</span>'));
+  if (d.affected_assets !== undefined) meta.push(kv('Assets', d.affected_assets));
+  if (d.source_url) {
+    var domain = d.source_url.replace(/^https?:\/\//, '').split('/')[0];
+    meta.push(kv('Source', '<a href="' + esc(d.source_url) + '" target="_blank" style="color:#38bdf8;">' + esc(domain) + ' ↗</a>'));
+  }
+  if (d.created_at) meta.push(kv('Date', esc(d.created_at.slice(0,16).replace('T',' '))));
+  if (d.status)     meta.push(kv('Status', '<span style="color:#64748b;">' + esc(d.status) + '</span>'));
+
+  var vendors = '';
+  try {
+    var v = JSON.parse(d.affected_vendors || '[]');
+    if (v.length) vendors = v.join(', ');
+  } catch(e) { vendors = d.affected_vendors || ''; }
+  if (vendors) meta.push(kv('Vendors', esc(vendors)));
+
+  document.getElementById('threat-modal-meta').innerHTML = meta.join('');
+
+  // Body: exec summary + ops report
+  _rawExec = d.exec_report || '';
+  _rawOps  = d.ops_report  || '';
+  var body = '';
+
+  function sectionHtml(section, title, rawHtml, previewHtml) {
+    var s = '<div id="sec-' + section + '">';
+    s += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">';
+    s += '<div class="m-section-title m-section-toggle" style="margin-bottom:0;"'
+      + ' onclick="toggleSection(\'' + section + '\')" title="Click to collapse">'
+      + '<span class="m-section-caret" id="caret-' + section + '" style="transform:rotate(-90deg)">▾</span>' + title + '</div>';
+    s += '<div id="sec-' + section + '-controls" style="display:none;gap:.25rem;">';
+    s += '<button id="copy-btn-' + section + '" class="ops-toggle" onclick="copyMd(\'' + section + '\')">Copy</button>';
+    s += '<button id="' + section + '-btn-raw"     class="ops-toggle active" onclick="setSectionView(\'' + section + '\',\'raw\')">Raw</button>';
+    s += '<button id="' + section + '-btn-preview" class="ops-toggle"        onclick="setSectionView(\'' + section + '\',\'preview\')">Preview</button>';
+    s += '</div></div>';
+    s += '<div class="m-ops-wrap" id="sec-' + section + '-body" style="display:none">';
+    s += '<div id="m-' + section + '-raw">'     + rawHtml     + '</div>';
+    s += '<div id="m-' + section + '-preview">' + previewHtml + '</div>';
+    s += '</div></div>';
+    return s;
+  }
+
+  if (d.exec_report) {
+    body += sectionHtml('exec', 'Executive Summary',
+      renderMdRaw(d.exec_report), renderMdHtml(d.exec_report));
+  }
+  if (d.ops_report) {
+    body += sectionHtml('ops', 'Operations Report',
+      renderMdRaw(d.ops_report), renderMdHtml(d.ops_report));
+  }
+  if (!body) {
+    body = '<div style="text-align:center;padding:2rem 1rem;">'
+      + '<div style="color:#475569;margin-bottom:1rem;">Звіти не генерувались — загроза не стосується ваших Assets.</div>'
+      + '<button id="btn-gen-reports" onclick="generateReports()" '
+      + 'style="background:#1e3a5f;border:1px solid #2563eb;color:#93c5fd;font-size:.85rem;'
+      + 'padding:.5rem 1.25rem;border-radius:6px;cursor:pointer;">'
+      + '⚙ Generate Reports</button>'
+      + '</div>';
+  }
+  document.getElementById('threat-modal-body').innerHTML = body;
+  // Restore last chosen view for each section
+  if (_execView === 'preview') setSectionView('exec', 'preview');
+  if (_opsView  === 'preview') setSectionView('ops',  'preview');
+}
+
+var _execView = 'raw', _opsView = 'raw';
+var _rawExec = '', _rawOps = '';
+var _currentThreatId = null;
+
+function toggleSection(section) {
+  var body     = document.getElementById('sec-' + section + '-body');
+  var controls = document.getElementById('sec-' + section + '-controls');
+  var caret    = document.getElementById('caret-' + section);
+  if (!body) return;
+  var collapsed = body.style.display === 'none';
+  body.style.display     = collapsed ? '' : 'none';
+  controls.style.display = collapsed ? 'flex' : 'none';
+  caret.style.transform  = collapsed ? '' : 'rotate(-90deg)';
+}
+
+function setSectionView(section, mode) {
+  if (section === 'exec') _execView = mode; else _opsView = mode;
+  var raw  = document.getElementById('m-' + section + '-raw');
+  var prev = document.getElementById('m-' + section + '-preview');
+  var btnR = document.getElementById(section + '-btn-raw');
+  var btnP = document.getElementById(section + '-btn-preview');
+  if (!raw) return;
+  raw.style.display  = mode === 'raw'     ? 'block' : 'none';
+  prev.style.display = mode === 'preview' ? 'block' : 'none';
+  btnR.classList.toggle('active', mode === 'raw');
+  btnP.classList.toggle('active', mode === 'preview');
+}
+
+function copyMd(which) {
+  var text  = which === 'exec' ? _rawExec : _rawOps;
+  var btnId = which === 'exec' ? 'copy-btn-exec' : 'copy-btn-ops';
+  var btn   = document.getElementById(btnId);
+
+  function onOk() {
+    if (!btn) return;
+    btn.textContent = 'Copied!'; btn.classList.add('active');
+    setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('active'); }, 1500);
+  }
+  function onErr() {
+    if (!btn) return;
+    btn.textContent = 'Error';
+    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+  }
+  function fallback() {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy') ? onOk() : onErr(); }
+    catch(e) { onErr(); }
+    document.body.removeChild(ta);
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(onOk).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+function kv(k, v) {
+  return '<span class="m-kv"><span class="m-k">' + k + ':</span><span class="m-v">' + v + '</span></span>';
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// Raw view: escaped text with light syntax highlights
+function renderMdRaw(text) {
+  return esc(text)
+    .replace(/^(#{1,2} .+)$/gm,  '<span class="ops-h1">$1</span>')
+    .replace(/^(### .+)$/gm,      '<span class="ops-h2">$1</span>')
+    .replace(/\*\*(.+?)\*\*/g,    '<span class="ops-bold">$1</span>')
+    .replace(/`([^`\n]+)`/g,      '<span class="ops-code">$1</span>');
+}
+
+// Preview view: proper HTML from markdown
+function renderMdHtml(text) {
+  var out = '', inUl = false, inOl = false;
+
+  function flushList() {
+    if (inUl) { out += '</ul>'; inUl = false; }
+    if (inOl) { out += '</ol>'; inOl = false; }
+  }
+
+  function inline(s) {
+    return s
+      .replace(/`([^`]+)`/g,     '<code>$1</code>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+               '<a href="$2" target="_blank" style="color:#38bdf8;">$1</a>');
+  }
+
+  function processLines(block) {
+    var lines = block.split('\n');
+    var tblBuf = [];
+
+    function flushTable() {
+      if (!tblBuf.length) return;
+      var rows = tblBuf.slice();
+      tblBuf = [];
+      // Need at least header + separator rows
+      if (rows.length < 2 || !/^\|[\s|:=-]+\|?\s*$/.test(rows[1].trim())) {
+        rows.forEach(function(l) { flushList(); out += '<p>' + inline(esc(l)) + '</p>'; });
+        return;
+      }
+      function parseRow(r) {
+        return r.replace(/^\||\|$/g, '').split('|').map(function(c) { return c.trim(); });
+      }
+      var headers = parseRow(rows[0]);
+      out += '<table><thead><tr>';
+      headers.forEach(function(h) { out += '<th>' + inline(esc(h)) + '</th>'; });
+      out += '</tr></thead><tbody>';
+      rows.slice(2).forEach(function(row) {
+        if (!row.trim()) return;
+        out += '<tr>';
+        parseRow(row).forEach(function(cell) { out += '<td>' + inline(esc(cell)) + '</td>'; });
+        out += '</tr>';
+      });
+      out += '</tbody></table>';
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i];
+
+      // Table row: starts with |
+      if (l.trim().charAt(0) === '|') {
+        flushList();
+        tblBuf.push(l);
+        continue;
+      } else {
+        flushTable();
+      }
+
+      var hm = l.match(/^(#{1,3}) (.+)/);
+      if (hm) {
+        flushList();
+        var tag = 'h' + hm[1].length;
+        out += '<' + tag + '>' + inline(esc(hm[2])) + '</' + tag + '>';
+        continue;
+      }
+      if (/^---+$/.test(l.trim())) { flushList(); out += '<hr>'; continue; }
+      var um = l.match(/^[-*] (.+)/);
+      if (um) {
+        if (!inUl) { if (inOl) { out += '</ol>'; inOl = false; } out += '<ul>'; inUl = true; }
+        out += '<li>' + inline(esc(um[1])) + '</li>';
+        continue;
+      }
+      var om = l.match(/^\d+\. (.+)/);
+      if (om) {
+        if (!inOl) { if (inUl) { out += '</ul>'; inUl = false; } out += '<ol>'; inOl = true; }
+        out += '<li>' + inline(esc(om[1])) + '</li>';
+        continue;
+      }
+      var bq = l.match(/^> (.+)/);
+      if (bq) { flushList(); out += '<blockquote>' + inline(esc(bq[1])) + '</blockquote>'; continue; }
+      if (!l.trim()) { flushList(); continue; }
+      flushList();
+      out += '<p>' + inline(esc(l)) + '</p>';
+    }
+    flushTable();
+  }
+
+  // Split on fenced code blocks first — keeps their content intact, unprocessed
+  var segments = text.split(/(```(?:\w*)\n[\s\S]*?```)/);
+  for (var si = 0; si < segments.length; si++) {
+    var seg = segments[si];
+    var cm = seg.match(/^```(\w*)\n([\s\S]*?)```$/);
+    if (cm) {
+      flushList();
+      out += '<pre><code>' + esc(cm[2].replace(/\n$/, '')) + '</code></pre>';
+    } else {
+      processLines(seg);
+    }
+  }
+  flushList();
+  return out;
+}
+
+// ── On-demand report generation ──────────────────────────────────────────────
+
+function generateReports() {
+  if (!_currentThreatId) return;
+  var btn = document.getElementById('btn-gen-reports');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating…';
+  }
+  document.getElementById('threat-modal-body').innerHTML =
+    '<div class="m-spinner">Generating reports… This may take up to a minute.</div>';
+
+  fetch('/api/v1/threats/' + _currentThreatId + '/generate-reports', {method: 'POST'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) {
+        document.getElementById('threat-modal-body').innerHTML =
+          '<div style="color:#fca5a5;padding:1rem;">Error: ' + esc(d.error) + '</div>';
+        return;
+      }
+      // Re-fetch full threat data and re-render modal
+      fetch('/api/v1/threats/' + _currentThreatId)
+        .then(function(r) { return r.json(); })
+        .then(function(threat) { renderModal(threat); })
+        .catch(function() {
+          document.getElementById('threat-modal-body').innerHTML =
+            '<div style="color:#fca5a5;padding:1rem;">Reports generated but failed to reload. Please close and reopen.</div>';
+        });
+    })
+    .catch(function(e) {
+      document.getElementById('threat-modal-body').innerHTML =
+        '<div style="color:#fca5a5;padding:1rem;">Request failed: ' + esc(e.message) + '</div>';
+    });
+}
+
+// ── Dashboard data refresh (in-place, no page reload) ────────────────────────
+var AGENT_LABELS = {
+  ingestor:   'Ingestor — triage',
+  analyst:    'Analyst — deep analysis',
+  infra_guard:'InfraGuard — asset correlation',
+  claw_bridge:'ClawBridge — research',
+  publisher:  'Publisher — generating report',
+};
+
+var SEV_BADGE = {
+  critical: 'badge-critical',
+  high:     'badge-high',
+  medium:   'badge-medium',
+  low:      'badge-low',
+};
+
+function _threatRow(t) {
+  var sevClass = SEV_BADGE[t.severity] || 'badge-gray';
+  var sevBadge = t.severity
+    ? '<span class="badge ' + sevClass + '">' + esc(t.severity) + '</span>'
+    : '<span class="badge badge-gray">—</span>';
+  return '<tr data-sev="' + esc(t.severity) + '">'
+    + '<td><a href="#" onclick="openThreat(\'' + esc(t.id) + '\');return false;"'
+    + ' style="color:#93c5fd;text-decoration:none;cursor:pointer;">'
+    + esc(t.title) + '</a></td>'
+    + '<td style="font-size:0.8rem;color:#64748b;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+    + esc(t.source_name) + '</td>'
+    + '<td>' + sevBadge + '</td>'
+    + '<td>' + esc(t.threat_type) + '</td>'
+    + '<td style="font-size:0.8rem;color:#64748b;">' + (t.affected_vendors_label ? esc(t.affected_vendors_label) : '—') + '</td>'
+    + '<td style="font-size:0.8rem;color:#64748b;">' + esc(t.cve_ids) + '</td>'
+    + '<td>' + t.affected_assets_count + '</td>'
+    + '<td style="color:#64748b;font-size:0.8rem;">' + esc(t.created_at) + '</td>'
+    + '</tr>';
+}
+
+function _runRow(r) {
+  var statusCell;
+  if (r.status === 'failed') {
+    statusCell = '<span class="badge badge-critical" style="cursor:help;" title="'
+      + esc(r.error_message || 'No error details') + '">failed</span>';
+  } else if (r.status === 'running') {
+    statusCell = '<span class="badge" style="background:#1e3a5f;color:#93c5fd;"'
+      + ' id="badge-run-' + esc(r.id) + '">running</span>'
+      + '<div id="prog-run-' + esc(r.id) + '"'
+      + ' style="font-size:.7rem;color:#64748b;margin-top:.2rem;line-height:1.4;"></div>';
+  } else if (r.status === 'completed') {
+    statusCell = '<span class="badge badge-ok">completed</span>';
+  } else {
+    statusCell = '<span class="badge badge-gray">' + esc(r.status) + '</span>';
+  }
+  return '<tr>'
+    + '<td style="color:#64748b;font-size:0.8rem;">' + esc(r.started_at) + '</td>'
+    + '<td>' + esc(r.trigger) + '</td>'
+    + '<td>' + statusCell + '</td>'
+    + '<td>' + r.threats_processed + '</td>'
+    + '<td>' + r.threats_critical + '</td>'
+    + '</tr>';
+}
+
+function fetchDashboardData() {
+  fetch(_buildUrl())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      // ── Stat cards ──
+      var critEl = document.querySelector('[data-filter-sev="critical"] .value');
+      var highEl = document.querySelector('[data-filter-sev="high"] .value');
+      var runsEl = document.getElementById('runs-count');
+      if (critEl) critEl.textContent = d.critical_count;
+      if (highEl) highEl.textContent = d.high_count;
+      if (runsEl) runsEl.textContent = d.recent_runs_count;
+
+      // ── Threats table ──
+      var tbody = document.getElementById('threats-tbody');
+      if (tbody) {
+        if (d.threats.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#475569;padding:2rem;">'
+            + 'No threats found for the selected period / filters.</td></tr>';
+        } else {
+          tbody.innerHTML = d.threats.map(_threatRow).join('');
+        }
+        _allRows = Array.from(tbody.querySelectorAll('tr[data-sev]'));
+        _filtered = _allRows.slice();
+        _renderPage();
+      }
+
+      // ── Runs table ──
+      var runsTbody = document.getElementById('runs-tbody');
+      if (runsTbody && d.runs) {
+        if (d.runs.length === 0) {
+          runsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#475569;padding:1rem;">No runs yet.</td></tr>';
+        } else {
+          runsTbody.innerHTML = d.runs.map(_runRow).join('');
+        }
+      }
+
+      // Reset auto-refresh countdown after data is fetched
+      if (_rfSec > 0) _rfTarget = Date.now() + _rfSec * 1000;
+    })
+    .catch(function() {});
+}
+
+// ── Pipeline progress polling ─────────────────────────────────────────────────
+var _progressTimer = null;
+var _wasActive = false;
+
+function startProgressPolling() {
+  if (_progressTimer) return;
+  _progressTimer = setInterval(fetchProgress, 3000);
+  fetchProgress();
+}
+
+function stopProgressPolling() {
+  clearInterval(_progressTimer);
+  _progressTimer = null;
+}
+
+function fetchProgress() {
+  fetch('/web/pipeline-progress')
+    .then(function(r) { return r.json(); })
+    .then(function(p) {
+      if (!p.active) {
+        if (_wasActive) {
+          // pipeline just finished — refresh data in place
+          _wasActive = false;
+          stopProgressPolling();
+          setTimeout(fetchDashboardData, 800);
+        }
+        return;
+      }
+
+      // Pipeline active but no running badge yet → refresh data to show it
+      if (!document.querySelector('[id^="prog-run-"]')) {
+        fetchDashboardData();
+        return;
+      }
+
+      _wasActive = true;
+
+      var lines = [];
+      if (p.stage === 'polling') {
+        lines.push((p.sources_done || 0) + '/' + (p.sources_total || '?') + ' sources');
+        if (p.current_source) lines.push(p.current_source);
+      } else if (p.stage === 'processing') {
+        var scanned = p.items_scanned  || 0;
+        var threats = p.items_processed || 0;
+        var total   = p.items_new || '?';
+        lines.push(scanned + '/' + total + ' scanned' + (threats > 0 ? ', ' + threats + ' threats' : ''));
+        if (p.current_agent && AGENT_LABELS[p.current_agent]) {
+          lines.push(AGENT_LABELS[p.current_agent]);
+        }
+        if (p.current_source) lines.push(p.current_source);
+      }
+
+      document.querySelectorAll('[id^="prog-run-"]').forEach(function(el) {
+        el.innerHTML = lines.map(function(l) { return esc(l); }).join('<br>');
+      });
+    })
+    .catch(function() {});
+}
+
+// Always poll for progress — handles runs starting after page load
+startProgressPolling();
+
+// ── Auto-refresh ─────────────────────────────────────────────────────────────
+var _rfSec    = 0;
+var _rfTarget = 0;
+var _rfPaused = false;
+var _rfTicker = null;
+
+function setRefreshInterval(sec) {
+  _rfSec = sec;
+  localStorage.setItem('dash_rf', String(sec));
+  clearInterval(_rfTicker);
+  _rfTicker = null;
+  document.getElementById('rf-countdown').textContent = '';
+  if (sec <= 0) return;
+  _rfTarget = Date.now() + sec * 1000;
+  _rfTicker = setInterval(_rfTick, 500);
+}
+
+function _rfTick() {
+  if (_rfPaused) return;
+  var remaining = Math.ceil((_rfTarget - Date.now()) / 1000);
+  if (remaining <= 0) {
+    _rfTarget = Date.now() + _rfSec * 1000;  // reset immediately
+    fetchDashboardData();
+    return;
+  }
+  var h = Math.floor(remaining / 3600);
+  var m = Math.floor((remaining % 3600) / 60);
+  var s = remaining % 60;
+  var label = h > 0 ? h + 'h ' + (m > 0 ? m + 'm' : '') :
+              m > 0 ? m + 'm ' + (s > 0 ? s + 's' : '') : s + 's';
+  document.getElementById('rf-countdown').textContent = label.trim();
+}
+
+(function() {
+  var sel = document.getElementById('rf-select');
+  sel.addEventListener('mousedown', function() { _rfPaused = true; });
+  sel.addEventListener('blur', function() {
+    _rfPaused = false;
+    if (_rfSec > 0) _rfTarget = Date.now() + _rfSec * 1000;
+  });
+  sel.addEventListener('change', function() {
+    _rfPaused = false;
+    setRefreshInterval(+this.value);
+  });
+  var saved = parseInt(localStorage.getItem('dash_rf') || '0', 10);
+  if (saved > 0) {
+    sel.value = String(saved);
+    setRefreshInterval(saved);
+  }
+})();
+</script>
 {% endblock %}
