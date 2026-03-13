@@ -1,0 +1,257 @@
+[
+  {
+    "name": "0dayFans",
+    "source_type": "rss",
+    "poll_interval_minutes": 10,
+    "enabled": true,
+    "url": "https://0dayfans.com/feed.rss"
+  },
+  {
+    "name": "0patch Blog",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://blog.0patch.com/feeds/posts/default"
+  },
+  {
+    "name": "Anton on Security - Medium ",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://medium.com/feed/anton-on-security"
+  },
+  {
+    "name": "Ars Technica (Security)",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://arstechnica.com/tag/security/feed/"
+  },
+  {
+    "name": "Bellingcat",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.bellingcat.com/feed/"
+  },
+  {
+    "name": "Bleeping Computer",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.bleepingcomputer.com/feed/"
+  },
+  {
+    "name": "CISA Blog",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.cisa.gov/cisa/blog.xml"
+  },
+  {
+    "name": "CISA Cybersecurity Alerts & Advisories",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+  },
+  {
+    "name": "Checkpoint",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://research.checkpoint.com/feed/"
+  },
+  {
+    "name": "Cisco Newsroom: Enterprise Networkin",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://newsroom.cisco.com/c/services/i/servlets/newsroom/rssfeed.json?feed=enterprise-networking"
+  },
+  {
+    "name": "Cisco Newsroom: Security",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://newsroom.cisco.com/c/services/i/servlets/newsroom/rssfeed.json?feed=security"
+  },
+  {
+    "name": "Cisco Talos Intelligence Group",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "http://feeds.feedburner.com/feedburner/Talos"
+  },
+  {
+    "name": "Cloudflare Security Blog",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://blog.cloudflare.com/tag/security/rss"
+  },
+  {
+    "name": "Crowdstrike (Threat Research)",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.crowdstrike.com/en-us/blog/feed"
+  },
+  {
+    "name": "Dark Reading (all)",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.darkreading.com/rss.xml"
+  },
+  {
+    "name": "Exploit TG Channel",
+    "source_type": "telegram",
+    "poll_interval_minutes": 10,
+    "enabled": true,
+    "telegram_id": 1307778786,
+    "telegram_username": "exploitex",
+    "telegram_title": "Эксплойт"
+  },
+  {
+    "name": "FortiGuard Labs Threat Research",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://feeds.fortinet.com/fortinet/blog/threat-research&x=1"
+  },
+  {
+    "name": "FortiGuard Labs | FortiGuard Center - Threat Signal Report",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://filestore.fortinet.com/fortiguard/rss/threatsignal.xml"
+  },
+  {
+    "name": "FortiGuard Labs | Operational Technology Service Updates",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://filestore.fortinet.com/fortiguard/rss/indsec.xml"
+  },
+  {
+    "name": "Fortinet Firmware Updates",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://support.fortinet.com/rss/firmware.xml"
+  },
+  {
+    "name": "Fortinet Outbreak Alerts",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.fortiguard.com/rss-feeds"
+  },
+  {
+    "name": "Google Project Zero",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://googleprojectzero.blogspot.com/feeds/posts/default"
+  },
+  {
+    "name": "HACKMAGEDDON",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.hackmageddon.com/feed/"
+  },
+  {
+    "name": "Microsoft Security Blog",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.microsoft.com/security/blog/feed/"
+  },
+  {
+    "name": "NAO Sec (nao-sec.org)",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://nao-sec.org/feed"
+  },
+  {
+    "name": "Press Releases",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://feeds.fortinet.com/fortinet/press-releases"
+  },
+  {
+    "name": "SentinelOne Labs",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://www.sentinelone.com/labs/feed/"
+  },
+  {
+    "name": "Social Engineering",
+    "source_type": "telegram",
+    "poll_interval_minutes": 10,
+    "enabled": true,
+    "telegram_id": 1315676483,
+    "telegram_username": "Social_engineering",
+    "telegram_title": "Social Engineering"
+  },
+  {
+    "name": "Test Import RSS",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://example.com/feed.rss"
+  },
+  {
+    "name": "TheHackersNews",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://feeds.feedburner.com/TheHackersNews"
+  },
+  {
+    "name": "VirusTotal Blog",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "https://blog.virustotal.com/feeds/posts/default"
+  },
+  {
+    "name": "We Live Security (ESET)",
+    "source_type": "rss",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "url": "http://feeds.feedburner.com/eset/blog?format=xml"
+  },
+  {
+    "name": "infosecurity",
+    "source_type": "telegram",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "telegram_id": 1203496893,
+    "telegram_username": "tg_infosec",
+    "telegram_title": "infosecurity"
+  },
+  {
+    "name": "vxunderground",
+    "source_type": "telegram",
+    "poll_interval_minutes": 60,
+    "enabled": true,
+    "telegram_id": 1182568527,
+    "telegram_username": "vxunderground",
+    "telegram_title": "vx-underground"
+  },
+  {
+    "name": "Інфобезпека",
+    "source_type": "telegram",
+    "poll_interval_minutes": 10,
+    "enabled": true,
+    "telegram_id": 1331673710,
+    "telegram_username": "infobezopasnostru",
+    "telegram_title": "Инфобезопасность"
+  }
+]
