@@ -155,6 +155,17 @@
   .search-reset { background:none; border:1px solid #334155; color:#475569; font-size:.75rem;
                   padding:.28rem .6rem; border-radius:4px; cursor:pointer; transition:all .15s; }
   .search-reset:hover { color:#94a3b8; border-color:#475569; }
+  .assets-toggle { display:flex; align-items:center; gap:.35rem; cursor:pointer; user-select:none;
+                   font-size:.78rem; color:#475569; white-space:nowrap; flex-shrink:0; }
+  .assets-toggle input[type=checkbox] { display:none; }
+  .assets-toggle-pill { width:2rem; height:1.1rem; border-radius:999px; background:#1e293b;
+                        border:1px solid #334155; position:relative; transition:background .15s,border-color .15s; flex-shrink:0; }
+  .assets-toggle-pill::after { content:''; position:absolute; top:2px; left:2px;
+                                width:.65rem; height:.65rem; border-radius:50%;
+                                background:#475569; transition:transform .15s,background .15s; }
+  .assets-toggle input:checked ~ .assets-toggle-pill { background:#1e3a5f; border-color:#2563eb; }
+  .assets-toggle input:checked ~ .assets-toggle-pill::after { transform:translateX(.85rem); background:#93c5fd; }
+  .assets-toggle input:checked ~ .assets-toggle-label { color:#93c5fd; }
 </style>
 
 <div class="refresh-bar">
@@ -208,7 +219,13 @@
     <input class="search-input" id="s-type"   type="text" placeholder="Type…"   oninput="debounceSearch()" style="flex:1;min-width:70px;">
     <input class="search-input" id="s-vendor" type="text" placeholder="Vendor…" oninput="debounceSearch()" style="flex:1.5;min-width:80px;">
     <input class="search-input" id="s-cve"    type="text" placeholder="CVE…"    oninput="debounceSearch()" style="flex:1.2;min-width:70px;">
-    <button class="search-reset" id="filter-reset" onclick="resetSearch()" style="display:none;">✕ Reset</button>
+    <div class="search-sep"></div>
+    <label class="assets-toggle" title="Показати тільки загрози з ураженими активами">
+      <input type="checkbox" id="s-has-assets" onchange="applySearch()">
+      <span class="assets-toggle-pill"></span>
+      <span class="assets-toggle-label">З активами</span>
+    </label>
+    <button class="search-reset" id="filter-reset" onclick="resetSearch()">✕ Reset</button>
   </div>
   <table>
     <thead><tr><th>Title</th><th>Source</th><th>Severity</th><th>Type</th><th>Vendor / Product</th><th>CVEs</th><th>Assets</th><th>Date</th></tr></thead>
@@ -304,6 +321,7 @@ var _searchSev   = '';
 var _searchType  = '';
 var _searchVendor= '';
 var _searchCve   = '';
+var _searchHasAssets = false;
 var _debounceTimer = null;
 
 var PERIOD_LABELS = {today:'Today', '24h':'Last 24h', '7d':'Last 7 days', '30d':'Last 30 days'};
@@ -316,12 +334,13 @@ function _buildUrl() {
   if (_searchType)          p.set('threat_type', _searchType);
   if (_searchVendor)        p.set('vendor',      _searchVendor);
   if (_searchCve)           p.set('cve',         _searchCve);
+  if (_searchHasAssets)     p.set('has_assets',  '1');
   var qs = p.toString();
   return '/web/dashboard-data' + (qs ? '?' + qs : '');
 }
 
 function _anyFilter() {
-  return _period !== 'today' || _searchQ || _searchSev || _searchType || _searchVendor || _searchCve;
+  return _period !== 'today' || _searchQ || _searchSev || _searchType || _searchVendor || _searchCve || _searchHasAssets;
 }
 
 function _syncUi() {
@@ -337,9 +356,6 @@ function _syncUi() {
   var hl = document.querySelector('[data-filter-sev="high"] .label');
   if (cl) cl.textContent = 'Critical — ' + label;
   if (hl) hl.textContent = 'High — ' + label;
-  // Reset button
-  var rst = document.getElementById('filter-reset');
-  if (rst) rst.style.display = _anyFilter() ? '' : 'none';
 }
 
 function setPeriod(p) {
@@ -354,7 +370,8 @@ function applySearch() {
   _searchSev    = (document.getElementById('s-sev')    || {}).value || '';
   _searchType   = (document.getElementById('s-type')   || {}).value || '';
   _searchVendor = (document.getElementById('s-vendor') || {}).value || '';
-  _searchCve    = (document.getElementById('s-cve')    || {}).value || '';
+  _searchCve        = (document.getElementById('s-cve')        || {}).value || '';
+  _searchHasAssets  = !!(document.getElementById('s-has-assets') || {}).checked;
   _currentPage  = 1;
   _syncUi();
   fetchDashboardData();
@@ -372,6 +389,8 @@ function resetSearch() {
   document.getElementById('s-type').value   = '';
   document.getElementById('s-vendor').value = '';
   document.getElementById('s-cve').value    = '';
+  document.getElementById('s-has-assets').checked = false;
+  _searchHasAssets = false;
   _currentPage = 1;
   _syncUi();
   fetchDashboardData();

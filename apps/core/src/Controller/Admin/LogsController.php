@@ -16,7 +16,7 @@ final class LogsController extends AbstractController
 {
     private const PAGE_SIZE = 50;
     private const LEVELS = ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
-    private const APPS = ['core', 'knowledge-agent', 'hello-agent', 'news-maker-agent'];
+    private const APPS = ['core', 'knowledge-agent', 'hello-agent', 'news-maker-agent', 'dev-reporter-agent', 'ti-analyst'];
 
     /** @var array<string, array{label: string, prefixes?: list<string>, terms?: list<string>, term?: array<string, string>}> */
     private const CATEGORIES = [

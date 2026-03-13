@@ -26,7 +26,7 @@ def _period_start(period: str) -> datetime:
 
 
 def _build_threat_query(db, period: str, q: str, severity: str, threat_type: str,
-                        vendor: str, cve: str):
+                        vendor: str, cve: str, has_assets: bool = False):
     since = _period_start(period if period in _VALID_PERIODS else "today")
     query = (
         db.query(ThreatIntel)
@@ -42,6 +42,8 @@ def _build_threat_query(db, period: str, q: str, severity: str, threat_type: str
         query = query.filter(ThreatIntel.affected_vendors.ilike(f"%{vendor}%"))
     if cve:
         query = query.filter(ThreatIntel.cve_ids.ilike(f"%{cve}%"))
+    if has_assets:
+        query = query.filter(ThreatIntel.affected_assets_count > 0)
     return query
 
 
@@ -94,10 +96,11 @@ def dashboard_data(
     threat_type: str = Query(""),
     vendor: str = Query(""),
     cve: str = Query(""),
+    has_assets: bool = Query(False),
 ):
     """Return filtered dashboard data as JSON for in-place DOM updates."""
     threats = (
-        _build_threat_query(db, period, q, severity, threat_type, vendor, cve)
+        _build_threat_query(db, period, q, severity, threat_type, vendor, cve, has_assets)
         .order_by(ThreatIntel.created_at.desc())
         .limit(500)
         .all()

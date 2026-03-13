@@ -2,10 +2,11 @@ import csv
 import io
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -65,6 +66,31 @@ def create_asset(
     except Exception as exc:
         logger.warning("OpenSearch asset index failed: %s", exc)
     return RedirectResponse("/admin/assets", status_code=303)
+
+
+@router.get("/export-csv")
+def export_csv(db: Annotated[Session, Depends(get_db)]):
+    """Export all assets as a downloadable CSV file."""
+    assets = db.query(Asset).order_by(Asset.criticality.desc(), Asset.vendor).all()
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=["name", "vendor", "model", "software_version", "criticality", "tags", "notes"])
+    writer.writeheader()
+    for a in assets:
+        writer.writerow({
+            "name": a.name,
+            "vendor": a.vendor,
+            "model": a.model,
+            "software_version": a.software_version or "",
+            "criticality": a.criticality,
+            "tags": a.tags or "",
+            "notes": a.notes or "",
+        })
+    filename = f"ti-analyst-assets-{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return Response(
+        content=buf.getvalue().encode("utf-8"),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/import-csv")

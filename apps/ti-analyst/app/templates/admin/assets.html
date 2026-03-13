@@ -1,6 +1,33 @@
 {% extends "base.html" %}
 {% block title %}Assets{% endblock %}
 {% block content %}
+<style>
+  .asset-info-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.1rem; height: 1.1rem; border-radius: 50%;
+    background: #1e3a5f; border: 1px solid #2563eb; color: #93c5fd;
+    font-size: .65rem; font-weight: 700; line-height: 1;
+    cursor: pointer; flex-shrink: 0; vertical-align: middle;
+    margin-left: .35rem; transition: background .15s;
+    position: relative;
+  }
+  .asset-info-btn:hover { background: #2563eb; }
+  .asset-popover {
+    display: none; position: absolute; z-index: 200;
+    left: 1.4rem; top: 50%; transform: translateY(-50%);
+    min-width: 200px; max-width: 320px;
+    background: #0f1923; border: 1px solid #1e3a5f; border-radius: 6px;
+    padding: .6rem .8rem; font-size: .8rem; color: #cbd5e1;
+    line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  }
+  .asset-popover::before {
+    content: ''; position: absolute;
+    right: 100%; top: 50%; transform: translateY(-50%);
+    border: 5px solid transparent; border-right-color: #1e3a5f;
+  }
+  .asset-info-btn.open .asset-popover { display: block; }
+</style>
 <div class="card">
   <h2>Add Asset</h2>
   <form action="/admin/assets/create" method="post" style="display:grid;grid-template-columns:repeat(5,1fr) auto;gap:0.5rem;align-items:end;">
@@ -13,11 +40,17 @@
   </form>
 </div>
 <div class="card" style="margin-top:0.5rem;">
-  <h2 style="margin-bottom:0.5rem;">Import CSV</h2>
-  <p style="font-size:0.8rem;color:#64748b;margin-bottom:0.5rem;">Columns: name, vendor, model, software_version, criticality</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+    <h2 style="margin:0;">Import / Export CSV</h2>
+    <a href="/admin/assets/export-csv"
+       class="btn btn-sm"
+       style="background:#1e293b;border:1px solid #334155;color:#94a3b8;text-decoration:none;font-size:.78rem;padding:.3rem .7rem;border-radius:4px;"
+       title="Download all assets as CSV">↓ Export CSV</a>
+  </div>
+  <p style="font-size:0.8rem;color:#64748b;margin-bottom:0.5rem;">Columns: name, vendor, model, software_version, criticality, tags, notes</p>
   <form action="/admin/assets/import-csv" method="post" enctype="multipart/form-data" style="display:flex;gap:0.5rem;align-items:center;">
     <input type="file" name="file" accept=".csv" style="width:auto;">
-    <button class="btn btn-primary" type="submit">Import</button>
+    <button class="btn btn-primary" type="submit">↑ Import CSV</button>
   </form>
 </div>
 <div class="card">
@@ -27,7 +60,14 @@
     <tbody>
     {% for a in assets %}
     <tr id="row-{{ a.id }}">
-      <td>{{ a.name }}</td>
+      <td style="display:flex;align-items:center;gap:.25rem;">
+        <span>{{ a.name }}</span>
+        {% if a.notes %}
+        <span class="asset-info-btn" onclick="toggleInfo(event, this)" title="Опис активу">?
+          <div class="asset-popover">{{ a.notes }}</div>
+        </span>
+        {% endif %}
+      </td>
       <td>{{ a.vendor }}</td>
       <td>{{ a.model }}</td>
       <td>{{ a.software_version or '—' }}</td>
@@ -69,6 +109,16 @@
   </div>
 </div>
 <script>
+function toggleInfo(e, btn) {
+  e.stopPropagation();
+  var isOpen = btn.classList.contains('open');
+  document.querySelectorAll('.asset-info-btn.open').forEach(function(b) { b.classList.remove('open'); });
+  if (!isOpen) btn.classList.add('open');
+}
+document.addEventListener('click', function() {
+  document.querySelectorAll('.asset-info-btn.open').forEach(function(b) { b.classList.remove('open'); });
+});
+
 function openEdit(id, name, vendor, model, sw, crit, tags, notes) {
   document.getElementById('edit-form').action = '/admin/assets/' + id + '/update';
   document.getElementById('e-name').value = name;
